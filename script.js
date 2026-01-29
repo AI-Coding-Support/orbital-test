@@ -11,15 +11,22 @@ let ballPos = 0, lastTime = 0, targetS = 0, targetE = 0, targetHit = true, isBoo
 const canvas = document.getElementById('gameCanvas'), ctx = canvas.getContext('2d');
 const cx = 300, cy = 300, r = 220, PI2 = Math.PI * 2, OFFSET = -Math.PI/2;
 
+// MOBILE FIX: Scale the canvas to fit the screen
+function resize() {
+    const size = Math.min(window.innerWidth, window.innerHeight, 600);
+    canvas.style.width = size + 'px';
+    canvas.style.height = size + 'px';
+}
+window.addEventListener('resize', resize);
+resize();
+
 // 2. BALANCED AUDIO ENGINE
 function initAudio() {
     if (!audioCtx) {
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         masterGain = audioCtx.createGain();
-        masterGain.gain.value = 0.4; // Overall volume
+        masterGain.gain.value = 0.4;
         masterGain.connect(audioCtx.destination);
-        
-        // Lower music volume specifically
         if (bgMusic) bgMusic.volume = 0.1; 
     }
 }
@@ -44,7 +51,6 @@ function playSFX(type) {
     } else if (type === 'boost_engine') {
         osc.type = 'square';
         osc.frequency.setValueAtTime(60 + (Math.random() * 20), now);
-        osc.frequency.exponentialRampToValueAtTime(400, now + 0.1);
         g.gain.setValueAtTime(0.05, now);
         osc.start(); osc.stop(now + 0.1);
     }
@@ -89,16 +95,21 @@ function update(t) {
     // Draw Target
     if (!targetHit && !isBoosting) {
         ctx.beginPath(); ctx.strokeStyle = "#00f2ff"; ctx.lineWidth = 35;
-        ctx.arc(cx, cy, r, targetS+OFFSET, targetE+OFFSET); ctx.stroke();
+        // Fix for drawing arcs that wrap around the 0-point
+        if (targetS < targetE) {
+            ctx.arc(cx, cy, r, targetS+OFFSET, targetE+OFFSET);
+        } else {
+            ctx.arc(cx, cy, r, targetS+OFFSET, PI2+OFFSET);
+            ctx.stroke(); ctx.beginPath();
+            ctx.arc(cx, cy, r, OFFSET, targetE+OFFSET);
+        }
+        ctx.stroke();
     }
 
-    // MOTION & SCORE INJECTION
     let currentSpeed = isBoosting ? 0.35 : (CONFIG.baseSpeed + (score * 0.0001));
     
     if (isBoosting) {
-        score += 0.8 * dt; // Points climb DURING boost
         if (Math.random() > 0.8) playSFX('boost_engine');
-        // Motion trail
         for(let i = 1; i <= 8; i++) {
             drawBall(ballPos - (i * 0.08), 1 / (i * 2.5), 12);
         }
@@ -121,13 +132,14 @@ function update(t) {
 window.handleBoost = () => {
     initAudio(); 
     showCard('none');
+    score += 100; // FIXED: Flat +100 points
     isBoosting = true; 
     running = true; 
     lastTime = performance.now();
     
     if(bgMusic) {
         bgMusic.currentTime = 0;
-        bgMusic.play(); // Music starts IMMEDIATELY
+        bgMusic.play();
     }
     
     document.getElementById('game-container').classList.add('warping');
@@ -143,10 +155,16 @@ window.handleBoost = () => {
 
 function spawnTarget() {
     targetHit = false;
+    // VARIABLE TARGETS: Choose between 100%, 70%, or 50% width
+    const multipliers = [1.0, 0.7, 0.5];
+    const mod = multipliers[Math.floor(Math.random() * multipliers.length)];
+    
     let baseWidth = Math.max(0.15, 0.5 - (score * 0.0003));
+    let finalWidth = baseWidth * mod;
+
     let arcDist = CONFIG.arcMin + Math.random() * (CONFIG.arcMax - CONFIG.arcMin);
     targetS = (ballPos + arcDist) % PI2;
-    targetE = (targetS + baseWidth) % PI2;
+    targetE = (targetS + finalWidth) % PI2;
 }
 
 function endGame() {
@@ -173,8 +191,9 @@ window.startGame = () => {
 
 window.onload = () => showCard('welcome-screen');
 
-window.addEventListener('mousedown', (e) => {
-    if (!running || isBoosting || e.target.tagName === 'BUTTON') return;
+// TOUCH & MOUSE SUPPORT
+const handleInput = (e) => {
+    if (!running || isBoosting || (e.target.tagName === 'BUTTON')) return;
     const p = ballPos % PI2;
     const s = targetS % PI2, e_arc = targetE % PI2;
     const hit = s < e_arc ? (p >= s && p <= e_arc) : (p >= s || p <= e_arc);
@@ -190,4 +209,13 @@ window.addEventListener('mousedown', (e) => {
         playSFX('fail');
     }
     document.getElementById('combo-ui').innerText = `STREAK: ${combo}`;
-});
+};
+
+window.addEventListener('mousedown', handleInput);
+window.addEventListener('touchstart', (e) => {
+    // Prevent zoom/scroll on tap but allow button clicks
+    if (e.target.tagName !== 'BUTTON') {
+        e.preventDefault();
+        handleInput(e);
+    }
+}, { passive: false });
