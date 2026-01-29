@@ -3,20 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ORBITAL PILOT // VERCEL</title>
+    <title>ORBITAL PILOT</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
     <div id="game-container">
         <canvas id="gameCanvas" width="600" height="600"></canvas>
-        
         <div id="central-hud">
             <div class="stat-label">Altitude</div>
             <div id="score">0</div>
             <div id="combo-ui">STREAK: 0</div>
         </div>
-
         <div id="vision-container"><div id="vision-bar"></div></div>
     </div>
 
@@ -27,18 +25,18 @@
         </div>
 
         <div id="main-menu" class="ui-card">
-            <button class="btn" onclick="startGame(false)">SOLO DEPLOYMENT</button>
-            <button class="btn" onclick="handleBoost()" style="border-color: #ffcc00; color: #ffcc00;">BOOST START (+100)</button>
+            <button class="btn" onclick="startGame()">SOLO DEPLOYMENT</button>
+            <button class="btn" onclick="handleBoost()" style="border-color: #ffcc00; color: #ffcc00;">BOOST START</button>
         </div>
 
         <div id="game-over-card" class="ui-card glass-panel">
-            <h2 style="color: #ff4444; letter-spacing: 5px;">LINK SEVERED</h2>
-            <div id="final-score-display" style="font-size: 50px; font-weight: 900; margin: 10px 0;">0</div>
-            <button class="btn" onclick="startGame(false)">RE-ESTABLISH</button>
+            <h2 style="color: #ff4444;">LINK SEVERED</h2>
+            <div id="final-score-display" style="font-size: 50px; font-weight: 900;">0</div>
+            <button class="btn" onclick="startGame()">RE-ESTABLISH</button>
         </div>
     </div>
 
-    <audio id="bgMusic" loop preload="auto">
+    <audio id="bgMusic" loop>
         <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" type="audio/mpeg">
     </audio>
 
