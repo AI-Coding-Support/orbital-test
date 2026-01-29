@@ -162,3 +162,4 @@ const handleInput = (e) => {
 
 window.addEventListener('mousedown', handleInput);
 window.addEventListener('touchstart', handleInput, { passive: false });
+
