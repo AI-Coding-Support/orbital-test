@@ -59,13 +59,23 @@ let score = 0, combo = 0, running = false, vision = 1.0;
 let ballPos = 0, lastTime = 0, targetS = 0, targetE = 0, targetHit = true, isBoosting = false;
 
 function showCard(id) {
-    document.querySelectorAll('.ui-card').forEach(c => c.style.display = 'none');
+    const screens = ['welcome-screen', 'main-menu', 'game-over-card'];
+    screens.forEach(s => {
+        const el = document.getElementById(s);
+        if(el) el.style.display = 'none';
+    });
+    
     const ui = document.getElementById('ui-layer');
     if (id === 'none') {
-        ui.style.opacity = '0'; ui.style.visibility = 'hidden';
+        ui.style.opacity = '0';
+        ui.style.pointerEvents = 'none'; // This lets you click "through" the blur
+        setTimeout(() => { ui.style.visibility = 'hidden'; }, 400);
     } else {
-        ui.style.opacity = '1'; ui.style.visibility = 'visible';
-        document.getElementById(id).style.display = 'flex';
+        ui.style.visibility = 'visible';
+        ui.style.opacity = '1';
+        ui.style.pointerEvents = 'auto';
+        const target = document.getElementById(id);
+        if(target) target.style.display = 'flex';
     }
 }
 
@@ -154,3 +164,4 @@ window.onload = () => {
     syncBackend();
 };
 window.addEventListener('mousedown', (e) => { if(e.target.tagName !== 'BUTTON') handleInput(); });
+
