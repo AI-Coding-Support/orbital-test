@@ -8,19 +8,20 @@ let audioCtx, masterGain, bgMusic = document.getElementById('bgMusic');
 let score = 0, combo = 0, running = false, vision = 1.0;
 let ballPos = 0, lastTime = 0, targetS = 0, targetE = 0, targetHit = true, isBoosting = false;
 
+// Power-up specific state
+let activePowerUp = null; // Stores {pos, type}
+
 const canvas = document.getElementById('gameCanvas'), ctx = canvas.getContext('2d');
 const cx = 300, cy = 300, r = 220, PI2 = Math.PI * 2, OFFSET = -Math.PI/2;
 
-// 2. BALANCED AUDIO ENGINE
+// 2. AUDIO ENGINE
 function initAudio() {
     if (!audioCtx) {
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         masterGain = audioCtx.createGain();
-        masterGain.gain.value = 0.4; // Overall volume
+        masterGain.gain.value = 0.4;
         masterGain.connect(audioCtx.destination);
-        
-        // Lower music volume specifically
-        if (bgMusic) bgMusic.volume = 0.1; 
+        if (bgMusic) bgMusic.volume = 0.15;
     }
 }
 
@@ -32,55 +33,44 @@ function playSFX(type) {
     const now = audioCtx.currentTime;
 
     if (type === 'hit') {
-        osc.frequency.setValueAtTime(500 + (combo * 15), now);
-        osc.frequency.exponentialRampToValueAtTime(1200, now + 0.1);
-        g.gain.setValueAtTime(0.3, now); g.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+        osc.frequency.setValueAtTime(500 + (combo * 20), now);
+        g.gain.setValueAtTime(0.2, now); g.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
         osc.start(); osc.stop(now + 0.1);
-    } else if (type === 'fail') {
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(150, now);
-        g.gain.setValueAtTime(0.2, now); g.gain.linearRampToValueAtTime(0.01, now + 0.3);
-        osc.start(); osc.stop(now + 0.3);
-    } else if (type === 'boost_engine') {
+    } else if (type === 'powerup') {
         osc.type = 'square';
-        osc.frequency.setValueAtTime(60 + (Math.random() * 20), now);
-        osc.frequency.exponentialRampToValueAtTime(400, now + 0.1);
-        g.gain.setValueAtTime(0.05, now);
-        osc.start(); osc.stop(now + 0.1);
+        osc.frequency.setValueAtTime(400, now);
+        osc.frequency.exponentialRampToValueAtTime(1500, now + 0.2);
+        g.gain.setValueAtTime(0.3, now); g.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+        osc.start(); osc.stop(now + 0.2);
     }
 }
 
-// 3. UI & RENDER
-function showCard(id) {
-    document.querySelectorAll('.ui-card').forEach(c => c.style.display = 'none');
-    const ui = document.getElementById('ui-layer');
-    if (id === 'none') {
-        ui.style.opacity = '0'; ui.style.visibility = 'hidden';
-    } else {
-        ui.style.opacity = '1'; ui.style.visibility = 'visible';
-        const target = document.getElementById(id);
-        if(target) target.style.display = 'flex';
+// 3. SPAWNING LOGIC
+function spawnTarget() {
+    targetHit = false;
+    const mods = [1.0, 0.7, 0.5];
+    const chosenMod = mods[Math.floor(Math.random() * mods.length)];
+    let baseWidth = Math.max(0.15, 0.5 - (score * 0.0002));
+    let finalWidth = baseWidth * chosenMod;
+
+    let arcDist = CONFIG.arcMin + (Math.random() * (CONFIG.arcMax - CONFIG.arcMin));
+    targetS = (ballPos + arcDist) % PI2;
+    targetE = (targetS + finalWidth) % PI2;
+
+    // 20% CHANCE TO SPAWN A POWER-UP ICON
+    if (Math.random() < 0.2 && !activePowerUp) {
+        activePowerUp = {
+            pos: (targetE + 1.0) % PI2,
+            type: Math.random() > 0.5 ? 'BOOST' : 'VISION'
+        };
     }
 }
 
-function drawBall(pos, opacity = 1, size = 15) {
-    const bx = cx + Math.cos(pos + OFFSET) * r;
-    const by = cy + Math.sin(pos + OFFSET) * r;
-    ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`;
-    if (opacity > 0.5) {
-        ctx.shadowBlur = 15;
-        ctx.shadowColor = "#00f2ff";
-    }
-    ctx.beginPath(); ctx.arc(bx, by, size, 0, PI2); ctx.fill();
-    ctx.shadowBlur = 0;
-}
-
-// 4. CORE UPDATE LOOP
+// 4. RENDERING & COLLISION
 function update(t) {
     if (!running) return;
     const dt = Math.min((t - lastTime) / 16.6, 2); 
     lastTime = t;
-
     ctx.clearRect(0,0,600,600);
     
     // Draw Track
@@ -89,19 +79,30 @@ function update(t) {
     // Draw Target
     if (!targetHit && !isBoosting) {
         ctx.beginPath(); ctx.strokeStyle = "#00f2ff"; ctx.lineWidth = 35;
-        ctx.arc(cx, cy, r, targetS+OFFSET, targetE+OFFSET); ctx.stroke();
+        if (targetS < targetE) ctx.arc(cx, cy, r, targetS + OFFSET, targetE + OFFSET);
+        else { ctx.arc(cx, cy, r, targetS + OFFSET, PI2 + OFFSET); ctx.stroke(); ctx.beginPath(); ctx.arc(cx, cy, r, OFFSET, targetE + OFFSET); }
+        ctx.stroke();
     }
 
-    // MOTION & SCORE INJECTION
-    let currentSpeed = isBoosting ? 0.35 : (CONFIG.baseSpeed + (score * 0.0001));
-    
-    if (isBoosting) {
-        score += 0.8 * dt; // Points climb DURING boost
-        if (Math.random() > 0.8) playSFX('boost_engine');
-        // Motion trail
-        for(let i = 1; i <= 8; i++) {
-            drawBall(ballPos - (i * 0.08), 1 / (i * 2.5), 12);
+    // DRAW POWER-UP ICON
+    if (activePowerUp) {
+        const px = cx + Math.cos(activePowerUp.pos + OFFSET) * r;
+        const py = cy + Math.sin(activePowerUp.pos + OFFSET) * r;
+        ctx.fillStyle = activePowerUp.type === 'BOOST' ? "#ffcc00" : "#00ff88";
+        ctx.shadowBlur = 15; ctx.shadowColor = ctx.fillStyle;
+        ctx.beginPath(); ctx.arc(px, py, 10, 0, PI2); ctx.fill();
+        ctx.shadowBlur = 0;
+
+        // Check for collision with ball
+        const dist = Math.abs(ballPos - activePowerUp.pos);
+        if (dist < 0.1 || dist > PI2 - 0.1) {
+            collectPowerUp();
         }
+    }
+
+    let currentSpeed = isBoosting ? 0.38 : (CONFIG.baseSpeed + (score * 0.0001));
+    if (isBoosting) {
+        for(let i = 1; i <= 10; i++) drawBall(ballPos - (i * 0.07), 1 / (i * 2), 12);
     }
 
     ballPos = (ballPos + currentSpeed * dt) % PI2;
@@ -117,60 +118,63 @@ function update(t) {
     requestAnimationFrame(update);
 }
 
-// 5. GAME ACTIONS
-window.handleBoost = () => {
-    initAudio(); 
-    showCard('none');
-    isBoosting = true; 
-    running = true; 
-    lastTime = performance.now();
-    
-    if(bgMusic) {
-        bgMusic.currentTime = 0;
-        bgMusic.play(); // Music starts IMMEDIATELY
+function collectPowerUp() {
+    if (!activePowerUp) return;
+    playSFX('powerup');
+    if (activePowerUp.type === 'BOOST') {
+        score += 100;
+        isBoosting = true;
+        document.getElementById('game-container').classList.add('warping');
+        setTimeout(() => {
+            isBoosting = false;
+            document.getElementById('game-container').classList.remove('warping');
+        }, 1500);
+    } else {
+        vision = 1.0; // Max Visibility
     }
-    
+    activePowerUp = null;
+}
+
+function drawBall(pos, opacity = 1, size = 15) {
+    const bx = cx + Math.cos(pos + OFFSET) * r;
+    const by = cy + Math.sin(pos + OFFSET) * r;
+    ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`;
+    if (opacity > 0.8) { ctx.shadowBlur = 15; ctx.shadowColor = "#00f2ff"; }
+    ctx.beginPath(); ctx.arc(bx, by, size, 0, PI2); ctx.fill();
+    ctx.shadowBlur = 0;
+}
+
+// 5. FLOW CONTROLS
+window.handleBoost = () => {
+    initAudio(); showCard('none');
+    score += 100;
+    isBoosting = true; running = true; lastTime = performance.now();
+    if(bgMusic) bgMusic.play();
     document.getElementById('game-container').classList.add('warping');
-    
     setTimeout(() => {
         isBoosting = false;
         document.getElementById('game-container').classList.remove('warping');
         spawnTarget();
     }, 2000);
-
     requestAnimationFrame(update);
 };
 
-function spawnTarget() {
-    targetHit = false;
-    let baseWidth = Math.max(0.15, 0.5 - (score * 0.0003));
-    let arcDist = CONFIG.arcMin + Math.random() * (CONFIG.arcMax - CONFIG.arcMin);
-    targetS = (ballPos + arcDist) % PI2;
-    targetE = (targetS + baseWidth) % PI2;
-}
+window.startGame = () => {
+    initAudio(); showCard('none');
+    score = 0; combo = 0; vision = 1.0; activePowerUp = null;
+    running = true; lastTime = performance.now();
+    if(bgMusic) bgMusic.play();
+    spawnTarget();
+    requestAnimationFrame(update);
+};
 
 function endGame() {
     running = false;
     if(bgMusic) bgMusic.pause();
-    playSFX('fail');
     showCard('game-over-card');
-    document.getElementById('final-score-display').innerText = Math.floor(score);
 }
 
 window.registerPilot = () => { initAudio(); showCard('main-menu'); };
-
-window.startGame = () => { 
-    initAudio(); showCard('none'); 
-    score = 0; combo = 0; vision = 1.0; 
-    running = true; lastTime = performance.now(); 
-    spawnTarget(); 
-    if(bgMusic) {
-        bgMusic.currentTime = 0;
-        bgMusic.play();
-    }
-    requestAnimationFrame(update); 
-};
-
 window.onload = () => showCard('welcome-screen');
 
 window.addEventListener('mousedown', (e) => {
@@ -183,11 +187,10 @@ window.addEventListener('mousedown', (e) => {
         targetHit = true; combo++;
         playSFX('hit');
         score += (combo >= 10 ? 2 : 1);
-        vision = Math.min(1.0, vision + 0.1);
+        vision = Math.min(1.0, vision + 0.12);
         spawnTarget();
     } else {
         combo = 0; vision -= 0.15;
-        playSFX('fail');
     }
     document.getElementById('combo-ui').innerText = `STREAK: ${combo}`;
 });
