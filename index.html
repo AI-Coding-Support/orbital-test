@@ -3,39 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ORBITAL PILOT // SYSTEM</title>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;400;900&display=swap');
-        * { box-sizing: border-box; user-select: none; }
-        body { background: #050508; color: white; font-family: 'Inter', sans-serif; margin: 0; overflow: hidden; display: flex; align-items: center; justify-content: center; height: 100vh; touch-action: none; }
-
-        /* REFACTORED SCORING PLACEMENT */
-        #game-container { position: relative; width: 600px; height: 600px; z-index: 10; display: flex; align-items: center; justify-content: center; }
-        canvas { position: absolute; top: 0; left: 0; z-index: 5; }
-
-        #central-hud { position: absolute; text-align: center; pointer-events: none; z-index: 20; display: flex; flex-direction: column; gap: 5px; }
-        .stat-label { font-size: 10px; color: #444; letter-spacing: 3px; text-transform: uppercase; }
-        #score { font-size: 80px; font-weight: 900; line-height: 1; color: #fff; }
-        #combo-ui { font-size: 20px; font-weight: 400; color: #ffcc00; }
-
-        #ui-layer { z-index: 1000; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.85); backdrop-filter: blur(10px); }
-        .ui-card { display: none; flex-direction: column; align-items: center; width: 100%; max-width: 480px; }
-        .glass-panel { background: rgba(15, 15, 25, 0.95); border: 1px solid rgba(0, 242, 255, 0.2); border-radius: 12px; padding: 30px; }
-        
-        .admin-scroll { width: 100%; max-height: 400px; overflow-y: auto; padding-right: 15px; text-align: left; }
-        .admin-section { margin-bottom: 20px; border-bottom: 1px solid #222; padding-bottom: 10px; }
-        .admin-section h3 { font-size: 11px; color: #00f2ff; letter-spacing: 2px; margin-bottom: 10px; }
-        .setting-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 12px; }
-        
-        .btn { padding: 14px; background: none; border: 1px solid #00f2ff; color: #00f2ff; font-weight: bold; cursor: pointer; letter-spacing: 2px; margin: 4px; width: 100%; text-transform: uppercase; transition: 0.2s; }
-        .btn:hover { background: #00f2ff; color: #000; }
-
-        #vision-container { position: absolute; bottom: 60px; width: 250px; height: 3px; background: #111; border-radius: 5px; overflow: hidden; }
-        #vision-bar { width: 100%; height: 100%; background: #00f2ff; box-shadow: 0 0 15px #00f2ff; }
-
-        .warping { animation: warp 0.05s infinite; filter: contrast(1.2) brightness(1.2); }
-        @keyframes warp { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.02); } }
-    </style>
+    <title>ORBITAL PILOT // VERCEL</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -61,36 +29,12 @@
         <div id="main-menu" class="ui-card">
             <button class="btn" onclick="startGame(false)">SOLO DEPLOYMENT</button>
             <button class="btn" onclick="handleBoost()" style="border-color: #ffcc00; color: #ffcc00;">BOOST START (+100)</button>
-            <button class="btn" onclick="openAdmin()" style="border-color: #444; color: #666; font-size: 11px;">SYSTEM CONFIG</button>
         </div>
 
         <div id="game-over-card" class="ui-card glass-panel">
             <h2 style="color: #ff4444; letter-spacing: 5px;">LINK SEVERED</h2>
             <div id="final-score-display" style="font-size: 50px; font-weight: 900; margin: 10px 0;">0</div>
             <button class="btn" onclick="startGame(false)">RE-ESTABLISH</button>
-            <button class="btn" onclick="resetToMenu()" style="border:none; color:#555">BACK</button>
-        </div>
-
-        <div id="admin-dashboard" class="ui-card glass-panel">
-            <h2 style="color: #ffcc00;">OVERRIDE PANEL</h2>
-            <div class="admin-scroll">
-                <div class="admin-section">
-                    <h3>SPAWN GEOMETRY</h3>
-                    <div class="setting-row">Min Arc: <input type="range" id="arc-min" min="0.5" max="3" step="0.1" value="1.2" oninput="updateAdminLabels()"> <b id="lbl-arc-min">1.2</b></div>
-                    <div class="setting-row">Max Arc: <input type="range" id="arc-max" min="3.1" max="5.5" step="0.1" value="3.5" oninput="updateAdminLabels()"> <b id="lbl-arc-max">3.5</b></div>
-                </div>
-                <div class="admin-section">
-                    <h3>DIFFICULTY CURVE</h3>
-                    <div class="setting-row">Base Speed: <input type="range" id="base-spd" min="0.01" max="0.1" step="0.005" value="0.025" oninput="updateAdminLabels()"> <b id="lbl-base-spd">0.025</b></div>
-                    <div class="setting-row">Vision Decay: <input type="range" id="vis-decay" min="0.0001" max="0.005" step="0.0001" value="0.0009" oninput="updateAdminLabels()"> <b id="lbl-vis-decay">0.0009</b></div>
-                </div>
-                <div class="admin-section">
-                    <h3>STREAK MULTIPLIERS</h3>
-                    <div class="setting-row">10+ Streak Pts: <input type="number" id="s10" value="2" style="width:50px"></div>
-                    <div class="setting-row">20+ Streak Pts: <input type="number" id="s20" value="3" style="width:50px"></div>
-                </div>
-            </div>
-            <button class="btn" onclick="saveAdminSettings()">SAVE TO LOCAL</button>
         </div>
     </div>
 
@@ -100,5 +44,4 @@
 
     <script src="script.js"></script>
 </body>
-
 </html>
