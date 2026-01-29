@@ -8,59 +8,30 @@ let audioCtx, masterGain, bgMusic = document.getElementById('bgMusic');
 let score = 0, combo = 0, running = false, vision = 1.0;
 let ballPos = 0, lastTime = 0, targetS = 0, targetE = 0, targetHit = true, isBoosting = false;
 
-const canvas = document.getElementById('gameCanvas'), ctx = canvas.getContext('2d');
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
 const cx = 300, cy = 300, r = 220, PI2 = Math.PI * 2, OFFSET = -Math.PI/2;
 
-// MOBILE FIX: High-DPI Scaling & Responsive Viewport
-function setupCanvas() {
-    const dpr = window.devicePixelRatio || 1;
-    const size = Math.min(window.innerWidth, window.innerHeight, 600);
+// 2. STABLE LAYOUT ENGINE (Desktop & Mobile Friendly)
+function resize() {
+    const wrapper = document.getElementById('game-wrapper'); // New wrapper for containment
+    if (!wrapper) return;
+
+    // Determine the best fit for the square game
+    const availableSize = Math.min(window.innerWidth, window.innerHeight);
+    const size = Math.min(availableSize, 600);
     
-    // Set display size (CSS)
-    canvas.style.width = size + "px";
-    canvas.style.height = size + "px";
+    wrapper.style.width = size + "px";
+    wrapper.style.height = size + "px";
     
-    // Set actual render size (Internal resolution)
-    canvas.width = 600 * dpr;
-    canvas.height = 600 * dpr;
-    
-    // Scale the context to match the internal resolution
-    ctx.scale(dpr, dpr);
+    canvas.width = 600;
+    canvas.height = 600;
 }
-window.addEventListener('resize', setupCanvas);
-setupCanvas();
+window.addEventListener('resize', resize);
+window.addEventListener('load', resize);
+resize();
 
-// 2. AUDIO
-function initAudio() {
-    if (!audioCtx) {
-        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        masterGain = audioCtx.createGain();
-        masterGain.gain.value = 0.4;
-        masterGain.connect(audioCtx.destination);
-        if (bgMusic) bgMusic.volume = 0.1; 
-    }
-}
-
-function playSFX(type) {
-    if (!audioCtx) return;
-    const osc = audioCtx.createOscillator();
-    const g = audioCtx.createGain();
-    osc.connect(g); g.connect(masterGain);
-    const now = audioCtx.currentTime;
-
-    if (type === 'hit') {
-        osc.frequency.setValueAtTime(500 + (combo * 15), now);
-        g.gain.setValueAtTime(0.3, now); g.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
-        osc.start(); osc.stop(now + 0.1);
-    } else if (type === 'fail') {
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(150, now);
-        g.gain.setValueAtTime(0.2, now); g.gain.linearRampToValueAtTime(0.01, now + 0.3);
-        osc.start(); osc.stop(now + 0.3);
-    }
-}
-
-// 3. CORE LOGIC
+// 3. CORE GAMEPLAY (Score + Variable Targets)
 function spawnTarget() {
     targetHit = false;
     const multipliers = [1.0, 0.7, 0.5];
@@ -80,8 +51,9 @@ function update(t) {
 
     ctx.clearRect(0,0,600,600);
     
-    // Track
-    ctx.beginPath(); ctx.arc(cx, cy, r, 0, PI2); ctx.strokeStyle = "#111"; ctx.lineWidth = 30; ctx.stroke();
+    // Draw Track
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, PI2); 
+    ctx.strokeStyle = "#111"; ctx.lineWidth = 30; ctx.stroke();
     
     // Target
     if (!targetHit && !isBoosting) {
@@ -99,7 +71,7 @@ function update(t) {
     let currentSpeed = isBoosting ? 0.35 : (CONFIG.baseSpeed + (score * 0.0001));
     ballPos = (ballPos + currentSpeed * dt) % PI2;
     
-    // Draw Ball
+    // Ball
     const bx = cx + Math.cos(ballPos + OFFSET) * r;
     const by = cy + Math.sin(ballPos + OFFSET) * r;
     ctx.fillStyle = "white";
@@ -115,9 +87,9 @@ function update(t) {
     requestAnimationFrame(update);
 }
 
-// 4. ACTIONS
+// 4. ACTIONS & UI
 window.handleBoost = () => {
-    initAudio(); showCard('none');
+    showCard('none');
     score += 100; // Flat 100
     isBoosting = true; running = true; lastTime = performance.now();
     setTimeout(() => { isBoosting = false; spawnTarget(); }, 2000);
@@ -125,41 +97,49 @@ window.handleBoost = () => {
 };
 
 window.startGame = () => {
-    initAudio(); showCard('none');
+    showCard('none');
     score = 0; combo = 0; vision = 1.0; running = true;
     lastTime = performance.now(); spawnTarget();
     requestAnimationFrame(update);
 };
 
 function endGame() {
-    running = false; showCard('game-over-card');
+    running = false;
+    showCard('game-over-card');
+    document.getElementById('final-score-display').innerText = Math.floor(score);
 }
 
 function showCard(id) {
     document.querySelectorAll('.ui-card').forEach(c => c.style.display = 'none');
     const ui = document.getElementById('ui-layer');
-    if (id === 'none') { ui.style.visibility = 'hidden'; }
-    else { ui.style.visibility = 'visible'; document.getElementById(id).style.display = 'flex'; }
+    if (id === 'none') {
+        ui.style.opacity = '0'; ui.style.visibility = 'hidden';
+    } else {
+        ui.style.opacity = '1'; ui.style.visibility = 'visible';
+        document.getElementById(id).style.display = 'flex';
+    }
 }
 
-// 5. MOBILE INPUT
+// 5. INPUT HANDLING
 const handleInput = (e) => {
     if (!running || isBoosting || e.target.closest('button')) return;
-    e.preventDefault();
     const p = ballPos % PI2;
     const s = targetS % PI2, e_arc = targetE % PI2;
     const hit = s < e_arc ? (p >= s && p <= e_arc) : (p >= s || p <= e_arc);
 
     if (hit && !targetHit) {
-        targetHit = true; combo++; playSFX('hit');
+        targetHit = true; combo++; 
         score += (combo >= 10 ? 2 : 1);
         vision = Math.min(1.0, vision + 0.1);
         spawnTarget();
     } else {
-        combo = 0; vision -= 0.15; playSFX('fail');
+        combo = 0; vision -= 0.15;
     }
+    document.getElementById('combo-ui').innerText = `STREAK: ${combo}`;
 };
 
 window.addEventListener('mousedown', handleInput);
-window.addEventListener('touchstart', handleInput, { passive: false });
-
+window.addEventListener('touchstart', (e) => {
+    if (e.target.tagName !== 'BUTTON') e.preventDefault();
+    handleInput(e);
+}, { passive: false });
