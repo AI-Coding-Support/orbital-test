@@ -4,7 +4,24 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>ORBITAL PILOT</title>
-    <link rel="stylesheet" href="style.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;400;900&display=swap');
+        * { box-sizing: border-box; user-select: none; }
+        body { background: #050508; color: white; font-family: 'Inter', sans-serif; margin: 0; overflow: hidden; display: flex; align-items: center; justify-content: center; height: 100vh; touch-action: none; }
+        #game-container { position: relative; width: 600px; height: 600px; z-index: 10; display: flex; align-items: center; justify-content: center; }
+        canvas { position: absolute; top: 0; left: 0; z-index: 5; }
+        #central-hud { position: absolute; text-align: center; pointer-events: none; z-index: 20; display: flex; flex-direction: column; gap: 5px; }
+        .stat-label { font-size: 10px; color: #444; letter-spacing: 3px; text-transform: uppercase; }
+        #score { font-size: 80px; font-weight: 900; line-height: 1; color: #fff; }
+        #combo-ui { font-size: 18px; color: #ffcc00; }
+        #ui-layer { z-index: 1000; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.85); backdrop-filter: blur(10px); transition: 0.4s; }
+        .ui-card { display: none; flex-direction: column; align-items: center; width: 100%; max-width: 400px; text-align: center; }
+        .glass-panel { background: rgba(15, 15, 25, 0.95); border: 1px solid rgba(0, 242, 255, 0.2); border-radius: 12px; padding: 40px; }
+        .btn { padding: 16px; background: none; border: 1px solid #00f2ff; color: #00f2ff; font-weight: bold; cursor: pointer; letter-spacing: 2px; margin: 8px; width: 100%; text-transform: uppercase; }
+        .btn:hover { background: #00f2ff; color: #000; }
+        #vision-container { position: absolute; bottom: 60px; width: 250px; height: 3px; background: #111; border-radius: 5px; overflow: hidden; }
+        #vision-bar { width: 100%; height: 100%; background: #00f2ff; box-shadow: 0 0 15px #00f2ff; }
+    </style>
 </head>
 <body>
 
@@ -23,23 +40,67 @@
             <h1 style="letter-spacing: 15px; color: #00f2ff;">ORBITAL</h1>
             <button class="btn" onclick="registerPilot()">INITIALIZE NEURAL LINK</button>
         </div>
-
         <div id="main-menu" class="ui-card">
             <button class="btn" onclick="startGame()">SOLO DEPLOYMENT</button>
-            <button class="btn" onclick="handleBoost()" style="border-color: #ffcc00; color: #ffcc00;">BOOST START</button>
-        </div>
-
-        <div id="game-over-card" class="ui-card glass-panel">
-            <h2 style="color: #ff4444;">LINK SEVERED</h2>
-            <div id="final-score-display" style="font-size: 50px; font-weight: 900;">0</div>
-            <button class="btn" onclick="startGame()">RE-ESTABLISH</button>
         </div>
     </div>
 
-    <audio id="bgMusic" loop>
-        <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" type="audio/mpeg">
-    </audio>
+    <script>
+        const CONFIG = { arcMin: 1.2, arcMax: 3.5, baseSpeed: 0.025, visionDecay: 0.0009 };
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        let score = 0, combo = 0, running = false, vision = 1.0;
+        let ballPos = 0, lastTime = 0, targetS = 0, targetE = 0, targetHit = true;
+        const cx = 300, cy = 300, r = 220, PI2 = Math.PI * 2, OFFSET = -Math.PI/2;
 
-    <script src="script.js"></script>
+        function showCard(id) {
+            document.querySelectorAll('.ui-card').forEach(c => c.style.display = 'none');
+            const ui = document.getElementById('ui-layer');
+            if (id === 'none') {
+                ui.style.opacity = '0'; ui.style.pointerEvents = 'none';
+                setTimeout(() => { ui.style.visibility = 'hidden'; }, 400);
+            } else {
+                ui.style.visibility = 'visible'; ui.style.opacity = '1'; ui.style.pointerEvents = 'auto';
+                document.getElementById(id).style.display = 'flex';
+            }
+        }
+
+        function spawnTarget() {
+            targetHit = false;
+            let width = Math.max(0.12, 0.5 - (score * 0.0004));
+            targetS = (ballPos + CONFIG.arcMin + Math.random()) % PI2;
+            targetE = (targetS + width) % PI2;
+        }
+
+        function update(t) {
+            if (!running) return;
+            const dt = (t - lastTime) / 16.6; lastTime = t;
+            ctx.clearRect(0, 0, 600, 600);
+            ctx.beginPath(); ctx.arc(cx, cy, r, 0, PI2); ctx.strokeStyle = "#111"; ctx.lineWidth = 30; ctx.stroke();
+            if (!targetHit) {
+                ctx.beginPath(); ctx.strokeStyle = "#00f2ff"; 
+                ctx.arc(cx, cy, r, targetS + OFFSET, targetE + OFFSET); ctx.stroke();
+            }
+            ballPos = (ballPos + (CONFIG.baseSpeed + (score * 0.0001)) * dt) % PI2;
+            const bx = cx + Math.cos(ballPos + OFFSET) * r;
+            const by = cy + Math.sin(ballPos + OFFSET) * r;
+            ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(bx, by, 15, 0, PI2); ctx.fill();
+            vision -= CONFIG.visionDecay * dt;
+            document.getElementById('vision-bar').style.width = (vision * 100) + '%';
+            document.getElementById('score').innerText = Math.floor(score);
+            if (vision <= 0) location.reload(); else requestAnimationFrame(update);
+        }
+
+        window.registerPilot = () => showCard('main-menu');
+        window.startGame = () => { showCard('none'); running = true; lastTime = performance.now(); spawnTarget(); requestAnimationFrame(update); };
+        window.onload = () => showCard('welcome-screen');
+        window.addEventListener('mousedown', (e) => { if (running && e.target.tagName !== 'BUTTON') {
+            const p = ballPos % PI2, s = targetS % PI2, e = targetE % PI2;
+            const hit = s < e ? (p >= s && p <= e) : (p >= s || p <= e);
+            if (hit && !targetHit) { targetHit = true; combo++; score += 1; vision = Math.min(1.0, vision + 0.1); spawnTarget(); }
+            else { combo = 0; vision -= 0.15; }
+            document.getElementById('combo-ui').innerText = `STREAK: ${combo}`;
+        }});
+    </script>
 </body>
 </html>
