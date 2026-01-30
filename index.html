@@ -26,19 +26,18 @@
 
                 <div id="welcome-screen" class="ui-card">
                     <h1>ORBIT</h1>
-                    <p>Synchronize your engine with the orbital gates.</p>
-                    <button onclick="registerPilot()">INITIALIZE</button>
+                    <button onclick="registerPilot()">INITIALIZE PILOT</button>
                 </div>
 
                 <div id="main-menu" class="ui-card">
                     <h1>READY?</h1>
-                    <button onclick="startGame()">MANUAL START</button>
-                    <button onclick="handleBoost()" style="margin-top: 10px; border-color: #ffcc00; color: #ffcc00;">BOOST START (+100)</button>
+                    <button onclick="startGame()">START MISSION</button>
+                    <button onclick="handleBoost()" style="margin-top:10px; border-color:#ffcc00; color:#ffcc00;">BOOST START (+100)</button>
                 </div>
 
                 <div id="game-over-card" class="ui-card">
                     <h1>SIGNAL LOST</h1>
-                    <p>Final Altitude: <span id="final-score-display">0</span>m</p>
+                    <p>Final Altitude: <span id="final-score-display">0</span></p>
                     <button onclick="startGame()">REBOOT</button>
                 </div>
             </div>
