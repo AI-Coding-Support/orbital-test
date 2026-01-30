@@ -1,39 +1,17 @@
+// api/config.js (Update)
 import Redis from 'ioredis';
-
-// Connect using the environment variable Vercel provided
 const redis = new Redis(process.env.REDIS_URL);
 
 export default async function handler(req, res) {
-    const defaultSettings = {
-        baseSpeed: 0.025,
-        visionDecay: 0.0009,
-        arcMin: 1.2,
-        arcMax: 3.5
-    };
+    // ... keep your GET and existing POST logic ...
 
-    if (req.method === 'GET') {
-        try {
-            const data = await redis.get('orbital_config');
-            return res.status(200).json(data ? JSON.parse(data) : defaultSettings);
-        } catch (error) {
-            console.error("Redis Error:", error);
-            return res.status(200).json(defaultSettings);
-        }
-    }
-
-    if (req.method === 'POST') {
-        const { auth, newConfig } = req.body;
-
-        if (auth !== process.env.ADMIN_PASSWORD) {
-            return res.status(401).json({ error: 'UNAUTHORIZED' });
-        }
-
-        try {
-            // Redis stores strings, so we stringify the object
-            await redis.set('orbital_config', JSON.stringify(newConfig));
-            return res.status(200).json({ success: true });
-        } catch (error) {
-            return res.status(500).json({ error: "Failed to save to Redis" });
-        }
+    // ADD THIS MODERATION LOGIC
+    if (req.method === 'PATCH') {
+        const { username } = req.body;
+        const banned = ['badword1', 'badword2', 'offensiveTerm']; // Add your list
+        const isClean = !banned.some(word => username.toLowerCase().includes(word));
+        const isValid = /^[a-zA-Z0-9_]{3,12}$/.test(username);
+        
+        return res.status(200).json({ valid: isClean && isValid });
     }
 }
