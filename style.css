@@ -64,3 +64,38 @@ button:hover { background: #00f2ff; color: #000; box-shadow: 0 0 20px #00f2ff; }
     50% { transform: scale(1.015); } 
     100% { transform: scale(1); } 
 }
+
+
+/* Login Specifics */
+#username-input {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid #00f2ff;
+    color: #fff;
+    padding: 10px;
+    text-align: center;
+    font-family: inherit;
+    letter-spacing: 2px;
+    outline: none;
+    margin-bottom: 10px;
+}
+
+#skin-selector {
+    display: flex;
+    gap: 15px;
+    margin-top: 10px;
+}
+
+.skin-opt {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 3px solid transparent;
+    transition: 0.2s;
+}
+
+.skin-opt.active {
+    border-color: #fff;
+    transform: scale(1.2);
+    box-shadow: 0 0 15px currentColor;
+}
