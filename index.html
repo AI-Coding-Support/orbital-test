@@ -24,21 +24,23 @@
             </div>
         </div>
 
-<div id="login-screen" class="ui-card">
-    <h1 style="letter-spacing: 10px;">PILOT LOGIN</h1>
-    
-    <input type="text" id="username-input" placeholder="ENTER CALLSIGN..." maxlength="12">
-    
-    <div class="label" style="margin-top: 20px;">SELECT HULL NEON</div>
-    <div id="skin-selector">
-        <div class="skin-opt active" data-color="#00f2ff" style="background: #00f2ff;"></div>
-        <div class="skin-opt" data-color="#ff00ff" style="background: #ff00ff;"></div>
-        <div class="skin-opt" data-color="#33ff00" style="background: #33ff00;"></div>
-        <div class="skin-opt" data-color="#ffff00" style="background: #ffff00;"></div>
-    </div>
+        <div id="ui-layer">
+            
+            <div id="login-screen" class="ui-card">
+                <h1 style="letter-spacing: 10px; color: #fff;">PILOT LOGIN</h1>
+                
+                <input type="text" id="username-input" placeholder="ENTER CALLSIGN..." maxlength="12">
+                
+                <div class="label" style="margin-top: 20px; color: #00f2ff;">SELECT HULL NEON</div>
+                <div id="skin-selector">
+                    <div class="skin-opt active" data-color="#00f2ff" style="background: #00f2ff;"></div>
+                    <div class="skin-opt" data-color="#ff00ff" style="background: #ff00ff;"></div>
+                    <div class="skin-opt" data-color="#33ff00" style="background: #33ff00;"></div>
+                    <div class="skin-opt" data-color="#ffff00" style="background: #ffff00;"></div>
+                </div>
 
-    <button onclick="confirmPilot()" style="margin-top: 30px;">INITIALIZE LINK</button>
-</div>
+                <button onclick="confirmPilot()" style="margin-top: 30px;">INITIALIZE LINK</button>
+            </div>
 
             <div id="main-menu" class="ui-card">
                 <button onclick="startGame()">SOLO DEPLOYMENT</button>
@@ -63,4 +65,3 @@
     <script src="script.js"></script>
 </body>
 </html>
-
