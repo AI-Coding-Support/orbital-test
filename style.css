@@ -1,135 +1,72 @@
-:root {
-    --pilot-color: #00f2ff;
-}
+:root { --pilot-color: #00f2ff; }
 
 * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
-
 body { 
-    background: #050505; 
-    color: #fff; 
-    font-family: 'Segoe UI', Tahoma, sans-serif; 
-    display: flex; 
-    justify-content: center; 
-    align-items: center; 
-    height: 100vh; 
-    overflow: hidden; 
+    background: #050505; color: #fff; font-family: 'Segoe UI', sans-serif; 
+    display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; 
 }
 
-/* THE ANCHOR */
-#game-wrapper { 
-    position: relative; 
-    width: 600px; 
-    height: 600px; 
-    background: #000;
-    overflow: hidden;
+#game-wrapper { position: relative; width: 600px; height: 600px; background: #000; overflow: hidden; }
+#gameCanvas { position: absolute; z-index: 1; display: block; background: radial-gradient(circle, #0a0a0a 0%, #000 100%); }
+
+/* UI LAYERS */
+#ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; }
+.ui-card { 
+    position: absolute; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.9); 
+    display: none; flex-direction: column; justify-content: center; align-items: center; backdrop-filter: blur(8px); 
 }
 
-#gameCanvas { 
-    position: absolute;
-    top: 0;
-    left: 0;
-    z-index: 1;
-    display: block; 
-    background: radial-gradient(circle, #0a0a0a 0%, #000 100%); 
-}
-
-/* HUD LAYER */
-.hud { 
-    position: absolute; 
-    pointer-events: none; 
-    z-index: 5; 
-    text-shadow: 0 0 10px var(--pilot-color); 
-}
-
+/* HUD */
+.hud { position: absolute; pointer-events: none; z-index: 5; text-shadow: 0 0 10px var(--pilot-color); }
 #score-container { top: 30px; left: 30px; }
 #combo-ui { top: 30px; right: 30px; font-size: 18px; color: #ffcc00; }
-
-.label { 
-    font-size: 10px; 
-    color: var(--pilot-color); 
-    letter-spacing: 3px; 
-    margin-bottom: 5px; 
-    text-transform: uppercase; 
-}
-
+.label { font-size: 10px; color: var(--pilot-color); letter-spacing: 3px; text-transform: uppercase; transition: 0.3s; }
 #score { font-size: 42px; font-weight: 900; }
 
-#vision-container { 
-    position: absolute; bottom: 50px; left: 50%; 
-    transform: translateX(-50%); width: 240px; z-index: 5; 
-}
+#vision-container { position: absolute; bottom: 50px; left: 50%; transform: translateX(-50%); width: 240px; z-index: 5; }
+.vision-track { width: 100%; height: 8px; background: rgba(255, 255, 255, 0.1); border-radius: 10px; overflow: hidden; }
+#vision-bar { width: 100%; height: 100%; background: var(--pilot-color); box-shadow: 0 0 15px var(--pilot-color); transition: width 0.1s linear; }
 
-.vision-track { 
-    width: 100%; height: 8px; background: rgba(255, 255, 255, 0.1); 
-    border-radius: 10px; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.1);
+/* INPUTS */
+#username-input { 
+    background: rgba(255, 255, 255, 0.05); border: 1px solid var(--pilot-color); color: #fff; 
+    padding: 12px; text-align: center; font-family: inherit; letter-spacing: 2px; outline: none; width: 260px; 
 }
+#username-input.invalid { border-color: #ff4444; box-shadow: 0 0 10px #ff4444; }
+#login-error { color: #ff4444; font-size: 10px; height: 20px; margin-top: 5px; letter-spacing: 1px; }
 
-#vision-bar { 
-    width: 100%; height: 100%; background: var(--pilot-color); 
-    box-shadow: 0 0 15px var(--pilot-color); 
-    transition: width 0.1s linear, background 0.3s; 
-}
-
-/* UI SYSTEM */
-#ui-layer { 
-    position: absolute; 
-    top: 0; 
-    left: 0; 
-    width: 100%; 
-    height: 100%; 
-    z-index: 10; 
-}
-
-.ui-card { 
-    position: absolute; 
-    width: 100%; 
-    height: 100%; 
-    background: rgba(0, 0, 0, 0.9); 
-    display: none; 
-    flex-direction: column; 
-    justify-content: center; 
-    align-items: center; 
-    backdrop-filter: blur(8px);
-}
-
-/* INPUTS & BUTTONS */
-#username-input {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid var(--pilot-color);
-    color: #fff;
-    padding: 12px;
-    text-align: center;
-    font-family: inherit;
-    letter-spacing: 2px;
-    outline: none;
-    margin-bottom: 20px;
-    width: 250px;
-}
-
-#skin-selector { display: flex; gap: 15px; margin-bottom: 20px; }
-.skin-opt { 
-    width: 35px; height: 35px; border-radius: 50%; 
-    cursor: pointer; border: 3px solid transparent; transition: 0.2s; 
-}
+#skin-selector { display: flex; gap: 15px; margin: 15px 0; }
+.skin-opt { width: 35px; height: 35px; border-radius: 50%; cursor: pointer; border: 3px solid transparent; transition: 0.2s; }
 .skin-opt.active { border-color: #fff; transform: scale(1.1); box-shadow: 0 0 15px currentColor; }
 
 button { 
-    background: rgba(255, 255, 255, 0.05); 
-    border: 1px solid var(--pilot-color); 
-    color: var(--pilot-color); 
-    padding: 15px 40px; 
-    cursor: pointer; 
-    font-size: 14px; 
-    font-weight: bold; 
-    letter-spacing: 2px; 
-    transition: 0.3s; 
+    background: rgba(255, 255, 255, 0.05); border: 1px solid var(--pilot-color); color: var(--pilot-color); 
+    padding: 15px 40px; cursor: pointer; font-size: 14px; font-weight: bold; letter-spacing: 2px; transition: 0.3s; 
 }
+button:hover:not(:disabled) { background: var(--pilot-color); color: #000; box-shadow: 0 0 20px var(--pilot-color); }
+button:disabled { opacity: 0.3; cursor: not-allowed; }
 
-button:hover { 
-    background: var(--pilot-color); 
-    color: #000; 
-    box-shadow: 0 0 20px var(--pilot-color); 
+/* FAILURE STATE */
+.failure-state { background: radial-gradient(circle, #250000 0%, #000 100%) !important; }
+.critical-text { color: #ff4444; font-size: 40px; letter-spacing: 8px; animation: pulseRed 1s infinite; }
+.final-stats { display: flex; gap: 40px; margin: 30px 0; }
+.stat-box div { font-size: 32px; font-weight: 900; }
+
+@keyframes pulseRed { 0%, 100% { text-shadow: 0 0 10px #f00; transform: scale(1); } 50% { text-shadow: 0 0 30px #f00; transform: scale(1.05); } }
+.warping { animation: warp 0.1s infinite; }
+@keyframes warp { 0%, 100% { transform: translate(0,0); } 50% { transform: translate(2px, 2px); } }
+
+.admin-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    font-size: 12px;
+    color: #00f2ff;
 }
-
-.warping { animation: warp 0.15s infinite; }
-@keyframes warp { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.01); } }
+.admin-grid input {
+    background: #222;
+    border: 1px solid #444;
+    color: #fff;
+    padding: 5px;
+    width: 80px;
+}
