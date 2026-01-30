@@ -52,7 +52,7 @@ function playSFX(type) {
     }
 }
 
-// 3. UI & SKIN HELPERS
+// 3. UI & THEME HELPERS
 function showCard(id) {
     document.querySelectorAll('.ui-card').forEach(c => c.style.display = 'none');
     const ui = document.getElementById('ui-layer');
@@ -83,7 +83,7 @@ function drawBall(pos, opacity = 1, size = 15) {
     const bx = cx + Math.cos(pos + OFFSET) * r;
     const by = cy + Math.sin(pos + OFFSET) * r;
     
-    // Dynamic coloring based on skin
+    // Uses the pilot's color with dynamic opacity for trails
     ctx.fillStyle = opacity === 1 ? pilotColor : `rgba(${hexToRgb(pilotColor)}, ${opacity})`;
     
     if (opacity > 0.5) {
@@ -104,7 +104,7 @@ function update(t) {
     ctx.beginPath(); ctx.arc(cx, cy, r, 0, PI2); 
     ctx.strokeStyle = "#1a1a1a"; ctx.lineWidth = 20; ctx.stroke();
     
-    // Target
+    // Target Arc
     if (!targetHit && !isBoosting) {
         ctx.beginPath(); ctx.strokeStyle = pilotColor; ctx.lineWidth = 25;
         ctx.lineCap = "round"; ctx.arc(cx, cy, r, targetS + OFFSET, targetE + OFFSET); 
@@ -174,23 +174,33 @@ window.startGame = () => {
 window.onload = () => {
     showCard('login-screen');
     
-    // Setup Skin Selector
+    // Theme & Skin Switcher
     document.querySelectorAll('.skin-opt').forEach(opt => {
         opt.addEventListener('click', () => {
             document.querySelectorAll('.skin-opt').forEach(o => o.classList.remove('active'));
             opt.classList.add('active');
+            
+            // Sync Color Variables
             pilotColor = opt.dataset.color;
+            document.documentElement.style.setProperty('--pilot-color', pilotColor);
         });
     });
 };
 
 window.addEventListener('mousedown', (e) => {
+    // Prevent game clicks when interacting with UI inputs or buttons
     if (!running || isBoosting || e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT') return;
+    
     const p = ballPos % PI2, s = targetS % PI2, e_arc = targetE % PI2;
     const hit = s < e_arc ? (p >= s && p <= e_arc) : (p >= s || p <= e_arc);
+    
     if (hit && !targetHit) {
         targetHit = true; combo++; playSFX('hit');
         score += (combo >= 10 ? 2 : 1);
-        vision = Math.min(1.0, vision + 0.15); spawnTarget();
-    } else { combo = 0; vision -= 0.10; playSFX('fail'); }
+        vision = Math.min(1.0, vision + 0.15); 
+        spawnTarget();
+    } else { 
+        combo = 0; vision -= 0.10; 
+        playSFX('fail'); 
+    }
 });
