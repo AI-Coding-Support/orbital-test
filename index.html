@@ -2,49 +2,46 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=600">
-    <title>Orbit Racer</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ORBITAL PILOT // VERCEL</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+
     <div id="game-container">
-        <div id="game-wrapper">
-            <canvas id="gameCanvas" width="600" height="600"></canvas>
-            
-            <div id="ui-layer">
-                <div id="score-container" class="hud">
-                    <div class="label">ALTITUDE</div>
-                    <div id="score">0</div>
-                </div>
-                
-                <div id="combo-ui" class="hud">STREAK: 0</div>
-                
-                <div id="vision-container" class="hud">
-                    <div class="label">VISIBILITY</div>
-                    <div class="vision-track"><div id="vision-bar"></div></div>
-                </div>
+        <canvas id="gameCanvas" width="600" height="600"></canvas>
+        
+        <div id="central-hud">
+            <div class="stat-label">Altitude</div>
+            <div id="score">0</div>
+            <div id="combo-ui">STREAK: 0</div>
+        </div>
 
-                <div id="welcome-screen" class="ui-card">
-                    <h1>ORBIT</h1>
-                    <button onclick="registerPilot()">INITIALIZE PILOT</button>
-                </div>
+        <div id="vision-container"><div id="vision-bar"></div></div>
+    </div>
 
-                <div id="main-menu" class="ui-card">
-                    <h1>READY?</h1>
-                    <button onclick="startGame()">START MISSION</button>
-                    <button onclick="handleBoost()" style="margin-top:10px; border-color:#ffcc00; color:#ffcc00;">BOOST START (+100)</button>
-                </div>
+    <div id="ui-layer">
+        <div id="welcome-screen" class="ui-card glass-panel">
+            <h1 style="letter-spacing: 15px; color: #00f2ff;">ORBITAL</h1>
+            <button class="btn" onclick="registerPilot()">INITIALIZE NEURAL LINK</button>
+        </div>
 
-                <div id="game-over-card" class="ui-card">
-                    <h1>SIGNAL LOST</h1>
-                    <p>Final Altitude: <span id="final-score-display">0</span></p>
-                    <button onclick="startGame()">REBOOT</button>
-                </div>
-            </div>
+        <div id="main-menu" class="ui-card">
+            <button class="btn" onclick="startGame(false)">SOLO DEPLOYMENT</button>
+            <button class="btn" onclick="handleBoost()" style="border-color: #ffcc00; color: #ffcc00;">BOOST START (+100)</button>
+        </div>
+
+        <div id="game-over-card" class="ui-card glass-panel">
+            <h2 style="color: #ff4444; letter-spacing: 5px;">LINK SEVERED</h2>
+            <div id="final-score-display" style="font-size: 50px; font-weight: 900; margin: 10px 0;">0</div>
+            <button class="btn" onclick="startGame(false)">RE-ESTABLISH</button>
         </div>
     </div>
-    <audio id="bgMusic" loop src="your-music-file.mp3"></audio>
+
+    <audio id="bgMusic" loop preload="auto">
+        <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" type="audio/mpeg">
+    </audio>
+
     <script src="script.js"></script>
 </body>
 </html>
-
