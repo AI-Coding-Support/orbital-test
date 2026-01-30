@@ -8,33 +8,42 @@
 </head>
 <body>
 
-    <div id="game-container">
+    <div id="game-wrapper">
         <canvas id="gameCanvas" width="600" height="600"></canvas>
         
-        <div id="central-hud">
-            <div class="stat-label">Altitude</div>
+        <div id="score-container" class="hud">
+            <div class="label">ALTITUDE</div>
             <div id="score">0</div>
-            <div id="combo-ui">STREAK: 0</div>
         </div>
 
-        <div id="vision-container"><div id="vision-bar"></div></div>
-    </div>
+        <div id="combo-ui" class="hud">STREAK: 0</div>
 
-    <div id="ui-layer">
-        <div id="welcome-screen" class="ui-card glass-panel">
-            <h1 style="letter-spacing: 15px; color: #00f2ff;">ORBITAL</h1>
-            <button class="btn" onclick="registerPilot()">INITIALIZE NEURAL LINK</button>
+        <div id="vision-container">
+            <div class="label">NEURAL SYNC</div>
+            <div class="vision-track">
+                <div id="vision-bar"></div>
+            </div>
         </div>
 
-        <div id="main-menu" class="ui-card">
-            <button class="btn" onclick="startGame(false)">SOLO DEPLOYMENT</button>
-            <button class="btn" onclick="handleBoost()" style="border-color: #ffcc00; color: #ffcc00;">BOOST START (+100)</button>
-        </div>
+        <div id="ui-layer">
+            <div id="welcome-screen" class="ui-card">
+                <h1>ORBITAL</h1>
+                <button onclick="registerPilot()">INITIALIZE NEURAL LINK</button>
+            </div>
 
-        <div id="game-over-card" class="ui-card glass-panel">
-            <h2 style="color: #ff4444; letter-spacing: 5px;">LINK SEVERED</h2>
-            <div id="final-score-display" style="font-size: 50px; font-weight: 900; margin: 10px 0;">0</div>
-            <button class="btn" onclick="startGame(false)">RE-ESTABLISH</button>
+            <div id="main-menu" class="ui-card">
+                <button onclick="startGame()">SOLO DEPLOYMENT</button>
+                <button onclick="handleBoost()" style="border-color: #ffcc00; color: #ffcc00; margin-top: 15px;">
+                    BOOST START (+100)
+                </button>
+            </div>
+
+            <div id="game-over-card" class="ui-card">
+                <h2 style="color: #ff4444; letter-spacing: 5px; margin-bottom: 10px;">LINK SEVERED</h2>
+                <div class="label">FINAL ALTITUDE</div>
+                <div id="final-score-display" style="font-size: 50px; font-weight: 900; margin-bottom: 20px;">0</div>
+                <button onclick="startGame()">RE-ESTABLISH LINK</button>
+            </div>
         </div>
     </div>
 
