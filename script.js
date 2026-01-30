@@ -1,5 +1,4 @@
-// 1. CONFIG & STATE
-// These defaults are used only if the server can't be reached.
+// 1. GLOBAL STATE
 let CONFIG = { 
     arcMin: 1.2, arcMax: 3.5, baseSpeed: 0.025, 
     visionDecay: 0.0009, sizes: [1.0, 0.7, 0.5] 
@@ -14,42 +13,27 @@ const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const cx = 300, cy = 300, r = 220, PI2 = Math.PI * 2, OFFSET = -Math.PI / 2;
 
-// 2. INITIALIZATION & SERVER SYNC
+// 2. INITIALIZATION (Sync with Redis)
 window.onload = async () => {
     showCard('login-screen');
     const err = document.getElementById('login-error');
-    err.innerText = "ESTABLISHING EDGE CONNECTION...";
+    err.innerText = "SYNCING WITH GLOBAL ENGINE...";
 
     try {
-        // Fetch global difficulty from our Redis-backed API
         const response = await fetch('/api/config');
-        if (!response.ok) throw new Error('Offline');
-        
-        const remoteConfig = await response.json();
-        CONFIG = { ...CONFIG, ...remoteConfig }; 
-        
-        err.style.color = "#00f2ff";
-        err.innerText = "SYSTEMS SYNCHRONIZED";
+        if (response.ok) {
+            const remoteConfig = await response.json();
+            CONFIG = { ...CONFIG, ...remoteConfig }; 
+            err.style.color = "#00f2ff";
+            err.innerText = "NEURAL LINK STABLE";
+        }
     } catch (e) {
-        err.style.color = "#ffcc00";
-        err.innerText = "OFFLINE MODE: LOCAL CORE ACTIVE";
+        err.innerText = "OFFLINE MODE: LOCAL PHYSICS ENABLED";
     }
-
     setupSkinListeners();
 };
 
-// 3. USERNAME MODERATION
-async function moderateUsername(name) {
-    const forbidden = ['admin', 'root', 'system', 'mod', 'server', 'god']; 
-    // This simulates a call to an industry moderation API
-    return new Promise((resolve) => {
-        setTimeout(() => {
-            const isClean = !forbidden.includes(name.toLowerCase()) && /^[a-zA-Z0-9_]{3,12}$/.test(name);
-            resolve(isClean);
-        }, 400);
-    });
-}
-
+// 3. INDUSTRY USERNAME MODERATION (Server-Side Check)
 window.validateInput = async () => {
     const input = document.getElementById('username-input');
     const btn = document.getElementById('login-btn');
@@ -65,23 +49,32 @@ window.validateInput = async () => {
     err.style.color = "#aaa";
     err.innerText = "VETTING CALLSIGN...";
 
-    const isSafe = await moderateUsername(val);
+    try {
+        // We use PATCH method to trigger the moderation logic in api/config.js
+        const response = await fetch('/api/config', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: val })
+        });
+        const result = await response.json();
 
-    if (!isSafe) {
-        err.style.color = "#ff4444";
-        err.innerText = "CALLSIGN REJECTED BY SECURITY";
-        input.classList.add('invalid');
-        btn.disabled = true;
-    } else {
-        err.style.color = "#00f2ff";
-        err.innerText = "CALLSIGN APPROVED";
-        input.classList.remove('invalid');
-        btn.disabled = false;
+        if (result.valid) {
+            err.style.color = "#00f2ff";
+            err.innerText = "CALLSIGN APPROVED";
+            input.classList.remove('invalid');
+            btn.disabled = false;
+        } else {
+            err.style.color = "#ff4444";
+            err.innerText = "CALLSIGN REJECTED: SECURITY PROTOCOL";
+            input.classList.add('invalid');
+            btn.disabled = true;
+        }
+    } catch (e) {
+        console.warn("Moderation offline");
     }
 };
 
-// 4. SECURE ADMIN SYSTEM
-// Hidden Shortcut: SHIFT + ALT + A
+// 4. SECURE ADMIN CONTROLS (Shift + Alt + A)
 window.addEventListener('keydown', (e) => {
     const menuVisible = document.getElementById('main-menu').style.display === 'flex';
     if (e.key.toLowerCase() === 'a' && e.shiftKey && e.altKey && menuVisible) {
@@ -101,7 +94,8 @@ window.saveAdminConfig = async () => {
     const password = prompt("ENTER SYSTEM OVERRIDE KEY:");
     if (!password) return;
 
-    const newConfig = {
+    // Build the proposed config
+    const proposedConfig = {
         baseSpeed: parseFloat(document.getElementById('cfg-speed').value),
         visionDecay: parseFloat(document.getElementById('cfg-decay').value),
         arcMin: parseFloat(document.getElementById('cfg-arcMin').value),
@@ -112,25 +106,26 @@ window.saveAdminConfig = async () => {
         const response = await fetch('/api/config', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ auth: password, newConfig })
+            body: JSON.stringify({ auth: password, newConfig: proposedConfig })
         });
 
-        const result = await response.json();
-
         if (response.ok) {
-            CONFIG = newConfig; // Only update local state if server confirms password
-            alert("GLOBAL UPDATE SUCCESSFUL");
+            // ONLY APPLY TO THE GAME IF THE SERVER SAYS YES
+            CONFIG = proposedConfig; 
+            alert("GLOBAL OVERRIDE SUCCESSFUL");
             showCard('main-menu');
         } else {
-            alert(`ACCESS DENIED: ${result.error || 'UNAUTHORIZED'}`);
-            showAdmin(); // Reset form
+            const errorData = await response.json();
+            alert(`ACCESS DENIED: ${errorData.error}`);
+            // Revert inputs to the actual current CONFIG
+            showAdmin();
         }
     } catch (err) {
-        alert("COMMUNICATIONS ERROR: FAILED TO REACH REDIS");
+        alert("COMMUNICATIONS FAILURE");
     }
 };
 
-// 5. GAME ENGINE
+// 5. CORE GAME ENGINE
 function initAudio() {
     if (!audioCtx) {
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -211,21 +206,7 @@ function update(t) {
     requestAnimationFrame(update);
 }
 
-// 6. ACTIONS & PROMO
-function checkPromo() {
-    const params = new URLSearchParams(window.location.search);
-    const promoArea = document.getElementById('promo-area');
-    if (params.get('promo') === 'boost500' && promoArea.innerHTML === "") {
-        const promoBtn = document.createElement('button');
-        promoBtn.innerHTML = "PROMO: BOOST DEPLOY (+500)";
-        promoBtn.style.cssText = "border-color: #ffcc00; color: #ffcc00; margin-top: 15px;";
-        promoBtn.onclick = handleBoost;
-        promoArea.appendChild(promoBtn);
-        document.getElementById('promo-status').innerText = "PROMOTIONAL LINK VERIFIED";
-        document.getElementById('promo-status').style.color = "#ffcc00";
-    }
-}
-
+// 6. MENUS & ACTIONS
 function spawnTarget() {
     targetHit = false;
     let sizeMult = CONFIG.sizes[Math.floor(Math.random() * CONFIG.sizes.length)];
@@ -256,6 +237,18 @@ function endGame() {
     document.getElementById('end-pilot-name').style.color = pilotColor;
     document.getElementById('final-score-display').innerText = Math.floor(score);
     showCard('game-over-card');
+}
+
+function checkPromo() {
+    const params = new URLSearchParams(window.location.search);
+    const promoArea = document.getElementById('promo-area');
+    if (params.get('promo') === 'boost500' && promoArea.innerHTML === "") {
+        const promoBtn = document.createElement('button');
+        promoBtn.innerHTML = "PROMO: BOOST DEPLOY (+500)";
+        promoBtn.style.cssText = "border-color: #ffcc00; color: #ffcc00; margin-top: 15px;";
+        promoBtn.onclick = handleBoost;
+        promoArea.appendChild(promoBtn);
+    }
 }
 
 window.startGame = () => { 
