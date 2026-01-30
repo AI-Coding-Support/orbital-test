@@ -1,16 +1,25 @@
+// 1. CONFIG & STATE
 let CONFIG = { 
-    arcMin: 1.2, arcMax: 3.5, baseSpeed: 0.025, 
-    visionDecay: 0.0009, sizes: [1.0, 0.7, 0.5] 
+    arcMin: 1.2, 
+    arcMax: 3.5, 
+    baseSpeed: 0.025, 
+    visionDecay: 0.0009, 
+    sizes: [1.0, 0.7, 0.5] 
 };
 
 let audioCtx, masterGain, bgMusic = document.getElementById('bgMusic');
 let score = 0, combo = 0, running = false, vision = 1.0;
 let ballPos = 0, lastTime = 0, targetS = 0, targetE = 0, targetHit = true, isBoosting = false;
 
+// Pilot Customization
+let pilotName = "GUEST";
+let pilotColor = "#00f2ff"; 
+
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const cx = 300, cy = 300, r = 220, PI2 = Math.PI * 2, OFFSET = -Math.PI / 2;
 
+// 2. AUDIO ENGINE
 function initAudio() {
     if (!audioCtx) {
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -43,19 +52,46 @@ function playSFX(type) {
     }
 }
 
+// 3. UI & SKIN HELPERS
 function showCard(id) {
     document.querySelectorAll('.ui-card').forEach(c => c.style.display = 'none');
     const ui = document.getElementById('ui-layer');
     if (id === 'none') { ui.style.display = 'none'; } 
-    else { ui.style.display = 'block'; const t = document.getElementById(id); if(t) t.style.display = 'flex'; }
+    else { 
+        ui.style.display = 'block'; 
+        const t = document.getElementById(id); 
+        if(t) t.style.display = 'flex'; 
+    }
 }
 
+function hexToRgb(hex) {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return `${r}, ${g}, ${b}`;
+}
+
+window.confirmPilot = () => {
+    const input = document.getElementById('username-input').value;
+    if (input.trim() !== "") pilotName = input.toUpperCase();
+    initAudio();
+    showCard('main-menu');
+};
+
+// 4. RENDER LOGIC
 function drawBall(pos, opacity = 1, size = 15) {
     const bx = cx + Math.cos(pos + OFFSET) * r;
     const by = cy + Math.sin(pos + OFFSET) * r;
-    ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`;
-    if (opacity > 0.5) { ctx.shadowBlur = 15; ctx.shadowColor = "#00f2ff"; }
-    ctx.beginPath(); ctx.arc(bx, by, size, 0, PI2); ctx.fill(); ctx.shadowBlur = 0;
+    
+    // Dynamic coloring based on skin
+    ctx.fillStyle = opacity === 1 ? pilotColor : `rgba(${hexToRgb(pilotColor)}, ${opacity})`;
+    
+    if (opacity > 0.5) {
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = pilotColor;
+    }
+    ctx.beginPath(); ctx.arc(bx, by, size, 0, PI2); ctx.fill();
+    ctx.shadowBlur = 0;
 }
 
 function update(t) {
@@ -64,11 +100,13 @@ function update(t) {
     lastTime = t;
     ctx.clearRect(0, 0, 600, 600);
     
+    // Orbit Track
     ctx.beginPath(); ctx.arc(cx, cy, r, 0, PI2); 
     ctx.strokeStyle = "#1a1a1a"; ctx.lineWidth = 20; ctx.stroke();
     
+    // Target
     if (!targetHit && !isBoosting) {
-        ctx.beginPath(); ctx.strokeStyle = "#00f2ff"; ctx.lineWidth = 25;
+        ctx.beginPath(); ctx.strokeStyle = pilotColor; ctx.lineWidth = 25;
         ctx.lineCap = "round"; ctx.arc(cx, cy, r, targetS + OFFSET, targetE + OFFSET); 
         ctx.stroke();
     }
@@ -81,6 +119,7 @@ function update(t) {
 
     ballPos = (ballPos + currentSpeed * dt) % PI2;
     drawBall(ballPos, 1, 15);
+    
     if (!isBoosting) {
         vision -= CONFIG.visionDecay * dt;
         if (vision <= 0) endGame();
@@ -92,6 +131,7 @@ function update(t) {
     requestAnimationFrame(update);
 }
 
+// 5. GAME ACTIONS
 function spawnTarget() {
     targetHit = false;
     let sizeMult = CONFIG.sizes[Math.floor(Math.random() * CONFIG.sizes.length)];
@@ -130,10 +170,22 @@ window.startGame = () => {
     requestAnimationFrame(update); 
 };
 
-window.onload = () => showCard('welcome-screen');
+// 6. INITIALIZATION & LISTENERS
+window.onload = () => {
+    showCard('login-screen');
+    
+    // Setup Skin Selector
+    document.querySelectorAll('.skin-opt').forEach(opt => {
+        opt.addEventListener('click', () => {
+            document.querySelectorAll('.skin-opt').forEach(o => o.classList.remove('active'));
+            opt.classList.add('active');
+            pilotColor = opt.dataset.color;
+        });
+    });
+};
 
 window.addEventListener('mousedown', (e) => {
-    if (!running || isBoosting || e.target.tagName === 'BUTTON') return;
+    if (!running || isBoosting || e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT') return;
     const p = ballPos % PI2, s = targetS % PI2, e_arc = targetE % PI2;
     const hit = s < e_arc ? (p >= s && p <= e_arc) : (p >= s || p <= e_arc);
     if (hit && !targetHit) {
