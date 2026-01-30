@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ORBITAL PILOT // VERCEL</title>
+    <title>ORBITAL PILOT // PRO EDITION</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -27,11 +27,12 @@
         <div id="ui-layer">
             
             <div id="login-screen" class="ui-card">
-                <h1 style="letter-spacing: 10px; color: #fff;">PILOT LOGIN</h1>
+                <h1 style="letter-spacing: 10px; margin-bottom: 20px;">PILOT LOGIN</h1>
                 
-                <input type="text" id="username-input" placeholder="ENTER CALLSIGN..." maxlength="12">
+                <input type="text" id="username-input" placeholder="ENTER CALLSIGN..." maxlength="12" oninput="validateInput()">
+                <div id="login-error" style="height: 20px; font-size: 10px; margin-top: 5px; letter-spacing: 1px;"></div>
                 
-                <div class="label" style="margin-top: 20px; color: #00f2ff;">SELECT HULL NEON</div>
+                <div class="label" style="margin-top: 10px;">SELECT HULL NEON</div>
                 <div id="skin-selector">
                     <div class="skin-opt active" data-color="#00f2ff" style="background: #00f2ff;"></div>
                     <div class="skin-opt" data-color="#ff00ff" style="background: #ff00ff;"></div>
@@ -39,22 +40,64 @@
                     <div class="skin-opt" data-color="#ffff00" style="background: #ffff00;"></div>
                 </div>
 
-                <button onclick="confirmPilot()" style="margin-top: 30px;">INITIALIZE LINK</button>
+                <button id="login-btn" onclick="confirmPilot()" disabled>INITIALIZE LINK</button>
             </div>
 
             <div id="main-menu" class="ui-card">
                 <button onclick="startGame()">SOLO DEPLOYMENT</button>
-                <button onclick="handleBoost()" style="border-color: #ffcc00; color: #ffcc00; margin-top: 15px;">
-                    BOOST START (+500)
-                </button>
+                <div id="promo-area">
+                    </div>
+                <p id="promo-status" style="font-size: 9px; margin-top: 20px; color: #444; letter-spacing: 1px;">
+                    ENCRYPTED CONNECTION ESTABLISHED
+                </p>
             </div>
 
-            <div id="game-over-card" class="ui-card">
-                <h2 style="color: #ff4444; letter-spacing: 5px; margin-bottom: 10px;">LINK SEVERED</h2>
-                <div class="label">FINAL ALTITUDE</div>
-                <div id="final-score-display" style="font-size: 50px; font-weight: 900; margin-bottom: 20px;">0</div>
-                <button onclick="startGame()">RE-ESTABLISH LINK</button>
+            <div id="game-over-card" class="ui-card failure-state">
+                <h2 class="critical-text">CRITICAL FAILURE</h2>
+                <div class="label" style="color: #fff;">NEURAL LINK SEVERED</div>
+                
+                <div class="final-stats">
+                    <div class="stat-box">
+                        <span class="label">PILOT</span>
+                        <div id="end-pilot-name">---</div>
+                    </div>
+                    <div class="stat-box">
+                        <span class="label">ALTITUDE</span>
+                        <div id="final-score-display">0</div>
+                    </div>
+                </div>
+                
+                <button onclick="startGame()" class="retry-btn">RE-ESTABLISH LINK</button>
             </div>
+
+            <div id="admin-dashboard" class="ui-card">
+                <h2 style="color: #ffcc00; margin-bottom: 20px; letter-spacing: 5px;">SYSTEM OVERRIDE</h2>
+                
+                <div class="admin-grid">
+                    <div class="admin-control">
+                        <span class="label">BASE SPEED</span>
+                        <input type="number" id="cfg-speed" step="0.005">
+                    </div>
+                    <div class="admin-control">
+                        <span class="label">VISION DECAY</span>
+                        <input type="number" id="cfg-decay" step="0.0001">
+                    </div>
+                    <div class="admin-control">
+                        <span class="label">MIN ARC SIZE</span>
+                        <input type="number" id="cfg-arcMin" step="0.1">
+                    </div>
+                    <div class="admin-control">
+                        <span class="label">MAX ARC SIZE</span>
+                        <input type="number" id="cfg-arcMax" step="0.1">
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 10px; margin-top: 30px;">
+                    <button onclick="saveAdminConfig()">APPLY OVERRIDE</button>
+                    <button onclick="showCard('main-menu')" style="border-color: #666; color: #666;">CANCEL</button>
+                </div>
+            </div>
+
         </div>
     </div>
 
