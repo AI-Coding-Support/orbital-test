@@ -1,26 +1,124 @@
+/* 1. RESET & BASE */
 * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
-body { background: #000; color: #fff; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
+body { 
+    background: #050505; 
+    color: #fff; 
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+    display: flex; 
+    justify-content: center; 
+    align-items: center; 
+    height: 100vh; 
+    overflow: hidden; 
+}
 
-#game-wrapper { position: relative; width: 600px; height: 600px; }
-#gameCanvas { display: block; background: #000; }
+/* 2. THE GAME BOX (The "Anchor") */
+#game-wrapper { 
+    position: relative; 
+    width: 600px; 
+    height: 600px; 
+    background: #000;
+    box-shadow: 0 0 50px rgba(0, 242, 255, 0.1);
+}
 
-#ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
+#gameCanvas { 
+    display: block; 
+    background: radial-gradient(circle, #0a0a0a 0%, #000 100%);
+}
 
-.hud { position: absolute; pointer-events: none; text-shadow: 0 0 10px #00f2ff; }
+/* 3. HUD LAYER (Absolute to Wrapper) */
+.hud { 
+    position: absolute; 
+    pointer-events: none; 
+    z-index: 5;
+    text-shadow: 0 0 10px #00f2ff; 
+}
+
 #score-container { top: 30px; left: 30px; }
-.label { font-size: 10px; color: #00f2ff; letter-spacing: 2px; margin-bottom: 5px; }
-#score { font-size: 36px; font-weight: bold; }
 #combo-ui { top: 30px; right: 30px; font-size: 18px; color: #ffcc00; }
 
-#vision-container { bottom: 40px; left: 50%; transform: translateX(-50%); width: 200px; text-align: center; }
-.vision-track { width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden; margin-top: 5px; }
-#vision-bar { width: 100%; height: 100%; background: #00f2ff; transition: width 0.1s linear; }
+.label { 
+    font-size: 10px; 
+    color: #00f2ff; 
+    letter-spacing: 3px; 
+    margin-bottom: 5px; 
+    text-transform: uppercase;
+}
 
-.ui-card { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: none; flex-direction: column; justify-content: center; align-items: center; pointer-events: auto; }
-.ui-card h1 { font-size: 48px; color: #00f2ff; margin-bottom: 20px; }
+#score { font-size: 42px; font-weight: 900; }
 
-button { background: transparent; border: 2px solid #00f2ff; color: #00f2ff; padding: 12px 30px; cursor: pointer; font-size: 16px; font-weight: bold; transition: 0.2s; }
-button:hover { background: #00f2ff; color: #000; }
+/* 4. VISION BAR (Centered at Bottom) */
+#vision-container { 
+    position: absolute;
+    bottom: 50px; 
+    left: 50%; 
+    transform: translateX(-50%); 
+    width: 240px; 
+    text-align: center;
+    z-index: 5;
+}
 
-.warping { animation: warp 0.1s infinite; }
-@keyframes warp { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.02); } }
+.vision-track { 
+    width: 100%; 
+    height: 6px; 
+    background: rgba(255, 255, 255, 0.1); 
+    border-radius: 10px; 
+    overflow: hidden; 
+    margin-top: 8px; 
+    border: 1px solid rgba(0, 242, 255, 0.2);
+}
+
+#vision-bar { 
+    width: 100%; 
+    height: 100%; 
+    background: #00f2ff; 
+    box-shadow: 0 0 10px #00f2ff;
+    transition: width 0.1s linear; 
+}
+
+/* 5. UI SCREENS (Overlay) */
+#ui-layer { 
+    position: absolute; 
+    top: 0; 
+    left: 0; 
+    width: 100%; 
+    height: 100%; 
+    z-index: 10; 
+}
+
+.ui-card { 
+    position: absolute; 
+    width: 100%; 
+    height: 100%; 
+    background: rgba(0, 0, 0, 0.85); 
+    display: none; 
+    flex-direction: column; 
+    justify-content: center; 
+    align-items: center; 
+    backdrop-filter: blur(5px);
+}
+
+/* 6. INTERACTIVES */
+button { 
+    background: rgba(0, 242, 255, 0.05); 
+    border: 1px solid #00f2ff; 
+    color: #00f2ff; 
+    padding: 15px 40px; 
+    cursor: pointer; 
+    font-size: 14px; 
+    font-weight: bold; 
+    letter-spacing: 2px;
+    transition: 0.3s; 
+}
+
+button:hover { 
+    background: #00f2ff; 
+    color: #000; 
+    box-shadow: 0 0 20px #00f2ff;
+}
+
+.warping { animation: warp 0.15s infinite; }
+@keyframes warp { 
+    0% { transform: scale(1); } 
+    50% { transform: scale(1.015); } 
+    100% { transform: scale(1); } 
+}
