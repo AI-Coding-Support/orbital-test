@@ -1,12 +1,13 @@
 :root {
-    --pilot-color: #00f2ff; /* Default */
+    --pilot-color: #00f2ff;
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
+
 body { 
     background: #050505; 
     color: #fff; 
-    font-family: 'Segoe UI', sans-serif; 
+    font-family: 'Segoe UI', Tahoma, sans-serif; 
     display: flex; 
     justify-content: center; 
     align-items: center; 
@@ -14,21 +15,43 @@ body {
     overflow: hidden; 
 }
 
+/* THE ANCHOR */
 #game-wrapper { 
     position: relative; 
     width: 600px; 
     height: 600px; 
     background: #000;
+    overflow: hidden;
 }
 
-#gameCanvas { display: block; background: radial-gradient(circle, #0a0a0a 0%, #000 100%); }
+#gameCanvas { 
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 1;
+    display: block; 
+    background: radial-gradient(circle, #0a0a0a 0%, #000 100%); 
+}
 
-/* THEME SYNCED HUD */
-.hud { position: absolute; pointer-events: none; z-index: 5; text-shadow: 0 0 10px var(--pilot-color); }
+/* HUD LAYER */
+.hud { 
+    position: absolute; 
+    pointer-events: none; 
+    z-index: 5; 
+    text-shadow: 0 0 10px var(--pilot-color); 
+}
+
 #score-container { top: 30px; left: 30px; }
 #combo-ui { top: 30px; right: 30px; font-size: 18px; color: #ffcc00; }
 
-.label { font-size: 10px; color: var(--pilot-color); letter-spacing: 3px; margin-bottom: 5px; text-transform: uppercase; transition: color 0.3s; }
+.label { 
+    font-size: 10px; 
+    color: var(--pilot-color); 
+    letter-spacing: 3px; 
+    margin-bottom: 5px; 
+    text-transform: uppercase; 
+}
+
 #score { font-size: 42px; font-weight: 900; }
 
 #vision-container { 
@@ -43,41 +66,70 @@ body {
 
 #vision-bar { 
     width: 100%; height: 100%; background: var(--pilot-color); 
-    box-shadow: 0 0 15px var(--pilot-color); transition: width 0.1s linear, background 0.3s; 
+    box-shadow: 0 0 15px var(--pilot-color); 
+    transition: width 0.1s linear, background 0.3s; 
 }
 
-/* UI INPUTS & BUTTONS */
+/* UI SYSTEM */
+#ui-layer { 
+    position: absolute; 
+    top: 0; 
+    left: 0; 
+    width: 100%; 
+    height: 100%; 
+    z-index: 10; 
+}
+
+.ui-card { 
+    position: absolute; 
+    width: 100%; 
+    height: 100%; 
+    background: rgba(0, 0, 0, 0.9); 
+    display: none; 
+    flex-direction: column; 
+    justify-content: center; 
+    align-items: center; 
+    backdrop-filter: blur(8px);
+}
+
+/* INPUTS & BUTTONS */
 #username-input {
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid var(--pilot-color);
     color: #fff;
-    padding: 10px;
+    padding: 12px;
     text-align: center;
     font-family: inherit;
     letter-spacing: 2px;
     outline: none;
-    margin-bottom: 10px;
-    transition: border 0.3s;
+    margin-bottom: 20px;
+    width: 250px;
 }
 
-#skin-selector { display: flex; gap: 15px; margin-top: 10px; }
-.skin-opt { width: 30px; height: 30px; border-radius: 50%; cursor: pointer; border: 3px solid transparent; transition: 0.2s; }
-.skin-opt.active { border-color: #fff; transform: scale(1.2); box-shadow: 0 0 15px currentColor; }
+#skin-selector { display: flex; gap: 15px; margin-bottom: 20px; }
+.skin-opt { 
+    width: 35px; height: 35px; border-radius: 50%; 
+    cursor: pointer; border: 3px solid transparent; transition: 0.2s; 
+}
+.skin-opt.active { border-color: #fff; transform: scale(1.1); box-shadow: 0 0 15px currentColor; }
 
 button { 
-    background: rgba(255, 255, 255, 0.05); border: 1px solid var(--pilot-color); 
-    color: var(--pilot-color); padding: 15px 40px; cursor: pointer; 
-    font-size: 14px; font-weight: bold; letter-spacing: 2px; transition: 0.3s; 
+    background: rgba(255, 255, 255, 0.05); 
+    border: 1px solid var(--pilot-color); 
+    color: var(--pilot-color); 
+    padding: 15px 40px; 
+    cursor: pointer; 
+    font-size: 14px; 
+    font-weight: bold; 
+    letter-spacing: 2px; 
+    transition: 0.3s; 
 }
 
-button:hover { background: var(--pilot-color); color: #000; box-shadow: 0 0 20px var(--pilot-color); }
-
-.ui-card { 
-    position: absolute; width: 100%; height: 100%; 
-    background: rgba(0, 0, 0, 0.85); display: none; 
-    flex-direction: column; justify-content: center; align-items: center; 
-    backdrop-filter: blur(5px);
+button:hover { 
+    background: var(--pilot-color); 
+    color: #000; 
+    box-shadow: 0 0 20px var(--pilot-color); 
 }
 
 .warping { animation: warp 0.15s infinite; }
-@keyframes warp { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.015); } }
+@keyframes warp { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.01); } }
