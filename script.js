@@ -3,8 +3,8 @@ let CONFIG = {
     arcMin: 1.2, 
     arcMax: 3.5, 
     baseSpeed: 0.025, 
-    visionDecay: 0.0009, 
-    streaks: { 10: 2, 20: 3 }
+    visionDecay: 0.0009,
+    sizes: [1.0, 0.7, 0.5] // Variable target sizes
 };
 
 let audioCtx, masterGain, bgMusic = document.getElementById('bgMusic');
@@ -13,22 +13,15 @@ let ballPos = 0, lastTime = 0, targetS = 0, targetE = 0, targetHit = true, isBoo
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
+const cx = 300, cy = 300, r = 220, PI2 = Math.PI * 2, OFFSET = -Math.PI / 2;
 
-// Fixed Center Points & Radius
-const cx = 300; 
-const cy = 300; 
-const r = 220; 
-const PI2 = Math.PI * 2; 
-const OFFSET = -Math.PI / 2; // Starts at the top (12 o'clock)
-
-// 2. BALANCED AUDIO ENGINE
+// 2. AUDIO
 function initAudio() {
     if (!audioCtx) {
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         masterGain = audioCtx.createGain();
         masterGain.gain.value = 0.4;
         masterGain.connect(audioCtx.destination);
-        
         if (bgMusic) bgMusic.volume = 0.1; 
     }
 }
@@ -59,7 +52,7 @@ function playSFX(type) {
     }
 }
 
-// 3. UI & RENDER
+// 3. UI
 function showCard(id) {
     document.querySelectorAll('.ui-card').forEach(c => c.style.display = 'none');
     const ui = document.getElementById('ui-layer');
@@ -80,29 +73,23 @@ function drawBall(pos, opacity = 1, size = 15) {
         ctx.shadowBlur = 15;
         ctx.shadowColor = "#00f2ff";
     }
-    ctx.beginPath(); 
-    ctx.arc(bx, by, size, 0, PI2); 
-    ctx.fill();
+    ctx.beginPath(); ctx.arc(bx, by, size, 0, PI2); ctx.fill();
     ctx.shadowBlur = 0;
 }
 
-// 4. CORE UPDATE LOOP
+// 4. CORE LOOP
 function update(t) {
     if (!running) return;
     const dt = Math.min((t - lastTime) / 16.6, 2); 
     lastTime = t;
 
-    // Clear Screen
     ctx.clearRect(0, 0, 600, 600);
     
-    // Draw Background Track (The Orbit)
-    ctx.beginPath(); 
-    ctx.arc(cx, cy, r, 0, PI2); 
-    ctx.strokeStyle = "#1a1a1a"; 
-    ctx.lineWidth = 20; 
-    ctx.stroke();
+    // Track
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, PI2); 
+    ctx.strokeStyle = "#1a1a1a"; ctx.lineWidth = 20; ctx.stroke();
     
-    // Draw Target Arc
+    // Target
     if (!targetHit && !isBoosting) {
         ctx.beginPath(); 
         ctx.strokeStyle = "#00f2ff"; 
@@ -112,16 +99,12 @@ function update(t) {
         ctx.stroke();
     }
 
-    // Motion & Difficulty Scaling
     let currentSpeed = isBoosting ? 0.35 : (CONFIG.baseSpeed + (score * 0.0001));
     
     if (isBoosting) {
-        score += 0.8 * dt;
+        score += 0.8 * dt; // Dynamic score injection
         if (Math.random() > 0.8) playSFX('boost_engine');
-        // Boost Trail
-        for(let i = 1; i <= 8; i++) {
-            drawBall(ballPos - (i * 0.08), 1 / (i * 2.5), 12);
-        }
+        for(let i = 1; i <= 8; i++) drawBall(ballPos - (i * 0.08), 1 / (i * 2.5), 12);
     }
 
     ballPos = (ballPos + currentSpeed * dt) % PI2;
@@ -132,7 +115,6 @@ function update(t) {
         if (vision <= 0) endGame();
     }
 
-    // Update UI Elements
     document.getElementById('vision-bar').style.width = (vision * 100) + '%';
     document.getElementById('score').innerText = Math.floor(score);
     document.getElementById('combo-ui').innerText = `STREAK: ${combo}`;
@@ -143,7 +125,10 @@ function update(t) {
 // 5. GAME ACTIONS
 function spawnTarget() {
     targetHit = false;
-    let baseWidth = Math.max(0.15, 0.5 - (score * 0.0003));
+    // VARIABLE SIZE LOGIC
+    let randomSizeMult = CONFIG.sizes[Math.floor(Math.random() * CONFIG.sizes.length)];
+    let baseWidth = Math.max(0.12, (0.5 - (score * 0.0003)) * randomSizeMult);
+    
     let arcDist = CONFIG.arcMin + Math.random() * (CONFIG.arcMax - CONFIG.arcMin);
     targetS = (ballPos + arcDist) % PI2;
     targetE = (targetS + baseWidth) % PI2;
@@ -156,11 +141,7 @@ window.handleBoost = () => {
     running = true; 
     lastTime = performance.now();
     
-    if(bgMusic) {
-        bgMusic.currentTime = 0;
-        bgMusic.play();
-    }
-    
+    if(bgMusic) { bgMusic.currentTime = 0; bgMusic.play(); }
     document.getElementById('game-wrapper').classList.add('warping');
     
     setTimeout(() => {
@@ -180,49 +161,33 @@ function endGame() {
     document.getElementById('final-score-display').innerText = Math.floor(score);
 }
 
-window.registerPilot = () => { 
-    initAudio(); 
-    showCard('main-menu'); 
-};
-
+window.registerPilot = () => { initAudio(); showCard('main-menu'); };
 window.startGame = () => { 
-    initAudio(); 
-    showCard('none'); 
+    initAudio(); showCard('none'); 
     score = 0; combo = 0; vision = 1.0; 
-    running = true; 
-    lastTime = performance.now(); 
+    running = true; lastTime = performance.now(); 
     spawnTarget(); 
-    if(bgMusic) {
-        bgMusic.currentTime = 0;
-        bgMusic.play();
-    }
+    if(bgMusic) { bgMusic.currentTime = 0; bgMusic.play(); }
     requestAnimationFrame(update); 
 };
 
-// Start logic
 window.onload = () => showCard('welcome-screen');
 
-// Input Handling
 window.addEventListener('mousedown', (e) => {
     if (!running || isBoosting || e.target.tagName === 'BUTTON') return;
-    
     const p = ballPos % PI2;
     const s = targetS % PI2;
     const e_arc = targetE % PI2;
-    
-    // Check if ball is inside the arc (handles the 0-degree crossing)
     const hit = s < e_arc ? (p >= s && p <= e_arc) : (p >= s || p <= e_arc);
 
     if (hit && !targetHit) {
-        targetHit = true; 
-        combo++;
+        targetHit = true; combo++;
         playSFX('hit');
         score += (combo >= 10 ? 2 : 1);
-        vision = Math.min(1.0, vision + 0.15); // Hit gives vision back
+        vision = Math.min(1.0, vision + 0.15);
         spawnTarget();
     } else {
-        combo = 0; 
-        vision -= 0.10; // Penalty for missing or clicking empty space
+        combo = 0; vision -= 0.10;
         playSFX('fail');
     }
 });
