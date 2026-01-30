@@ -3,45 +3,93 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ORBITAL PILOT // VERCEL</title>
-    <link rel="stylesheet" href="style.css">
+    <title>ORBITAL PILOT</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;900&display=swap');
+        * { box-sizing: border-box; user-select: none; }
+        body { background: #050508; color: white; font-family: 'Inter', sans-serif; margin: 0; overflow: hidden; display: flex; align-items: center; justify-content: center; height: 100vh; touch-action: none; }
+        #game-container { position: relative; width: 600px; height: 600px; display: flex; align-items: center; justify-content: center; }
+        canvas { position: absolute; top: 0; left: 0; z-index: 5; }
+        #central-hud { position: absolute; text-align: center; pointer-events: none; z-index: 20; }
+        #score { font-size: 80px; font-weight: 900; line-height: 1; color: #fff; }
+        #ui-layer { z-index: 1000; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.85); backdrop-filter: blur(10px); }
+        .ui-card { display: none; flex-direction: column; align-items: center; width: 300px; text-align: center; padding: 20px; border: 1px solid #00f2ff; background: #000; }
+        .btn { padding: 15px; background: #00f2ff; color: #000; font-weight: bold; cursor: pointer; border: none; width: 100%; margin-top: 20px; text-transform: uppercase; }
+        #vision-container { position: absolute; bottom: 40px; width: 200px; height: 4px; background: #222; }
+        #vision-bar { height: 100%; background: #00f2ff; width: 100%; transition: width 0.1s; }
+    </style>
 </head>
 <body>
-
     <div id="game-container">
         <canvas id="gameCanvas" width="600" height="600"></canvas>
-        
-        <div id="central-hud">
-            <div class="stat-label">Altitude</div>
-            <div id="score">0</div>
-            <div id="combo-ui">STREAK: 0</div>
-        </div>
-
+        <div id="central-hud"><div id="score">0</div></div>
         <div id="vision-container"><div id="vision-bar"></div></div>
     </div>
-
     <div id="ui-layer">
-        <div id="welcome-screen" class="ui-card glass-panel">
-            <h1 style="letter-spacing: 15px; color: #00f2ff;">ORBITAL</h1>
-            <button class="btn" onclick="registerPilot()">INITIALIZE NEURAL LINK</button>
-        </div>
-
-        <div id="main-menu" class="ui-card">
-            <button class="btn" onclick="startGame(false)">SOLO DEPLOYMENT</button>
-            <button class="btn" onclick="handleBoost()" style="border-color: #ffcc00; color: #ffcc00;">BOOST START (+100)</button>
-        </div>
-
-        <div id="game-over-card" class="ui-card glass-panel">
-            <h2 style="color: #ff4444; letter-spacing: 5px;">LINK SEVERED</h2>
-            <div id="final-score-display" style="font-size: 50px; font-weight: 900; margin: 10px 0;">0</div>
-            <button class="btn" onclick="startGame(false)">RE-ESTABLISH</button>
+        <div id="welcome-screen" class="ui-card" style="display: flex;">
+            <h1 style="color: #00f2ff;">ORBITAL</h1>
+            <button class="btn" onclick="startGame()">START GAME</button>
         </div>
     </div>
 
-    <audio id="bgMusic" loop preload="auto">
-        <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" type="audio/mpeg">
-    </audio>
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        let score = 0, running = false, vision = 1.0, ballPos = 0, lastTime = 0;
+        let targetS = 1, targetE = 1.5, targetHit = false;
 
-    <script src="script.js"></script>
+        function showCard(show) {
+            document.getElementById('ui-layer').style.display = show ? 'flex' : 'none';
+        }
+
+        function spawnTarget() {
+            targetHit = false;
+            targetS = Math.random() * Math.PI * 2;
+            targetE = targetS + 0.4;
+        }
+
+        function update(t) {
+            if (!running) return;
+            const dt = (t - lastTime) / 16.6; lastTime = t;
+            ctx.clearRect(0,0,600,600);
+            
+            // Draw Circle
+            ctx.beginPath(); ctx.arc(300, 300, 200, 0, Math.PI*2); ctx.strokeStyle = "#222"; ctx.lineWidth = 20; ctx.stroke();
+            
+            // Draw Target
+            if(!targetHit) {
+                ctx.beginPath(); ctx.arc(300, 300, 200, targetS, targetE); ctx.strokeStyle = "#00f2ff"; ctx.stroke();
+            }
+
+            // Move Ball
+            ballPos = (ballPos + 0.03 * dt) % (Math.PI * 2);
+            const bx = 300 + Math.cos(ballPos) * 200;
+            const by = 300 + Math.sin(ballPos) * 200;
+            ctx.fillStyle = "white"; ctx.beginPath(); ctx.arc(bx, by, 10, 0, Math.PI*2); ctx.fill();
+
+            vision -= 0.001 * dt;
+            document.getElementById('vision-bar').style.width = (vision * 100) + "%";
+            if(vision <= 0) { running = false; alert("Game Over! Score: " + score); location.reload(); }
+            requestAnimationFrame(update);
+        }
+
+        function startGame() {
+            showCard(false);
+            running = true;
+            lastTime = performance.now();
+            spawnTarget();
+            requestAnimationFrame(update);
+        }
+
+        window.addEventListener('mousedown', () => {
+            if(!running) return;
+            const p = ballPos % (Math.PI*2);
+            if(p >= targetS && p <= targetE) {
+                score++; targetHit = true; vision = Math.min(1, vision + 0.1);
+                document.getElementById('score').innerText = score;
+                setTimeout(spawnTarget, 100);
+            } else { vision -= 0.1; }
+        });
+    </script>
 </body>
 </html>
