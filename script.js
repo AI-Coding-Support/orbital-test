@@ -13,13 +13,17 @@ const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const cx = 300, cy = 300, r = 220, PI2 = Math.PI * 2, OFFSET = -Math.PI / 2;
 
-// 2. INITIALIZATION (Sync with Redis)
+// 2. INITIALIZATION
 window.onload = async () => {
+    // Enable UI interactions immediately
+    setupSkinListeners();
     showCard('login-screen');
+    
     const err = document.getElementById('login-error');
     err.innerText = "SYNCING WITH GLOBAL ENGINE...";
 
     try {
+        // Fetch global difficulty from Redis
         const response = await fetch('/api/config');
         if (response.ok) {
             const remoteConfig = await response.json();
@@ -28,12 +32,12 @@ window.onload = async () => {
             err.innerText = "NEURAL LINK STABLE";
         }
     } catch (e) {
+        console.warn("Sync failed, using local defaults.");
         err.innerText = "OFFLINE MODE: LOCAL PHYSICS ENABLED";
     }
-    setupSkinListeners();
 };
 
-// 3. INDUSTRY USERNAME MODERATION (Server-Side Check)
+// 3. INDUSTRY USERNAME MODERATION (Non-blocking)
 window.validateInput = async () => {
     const input = document.getElementById('username-input');
     const btn = document.getElementById('login-btn');
@@ -50,27 +54,30 @@ window.validateInput = async () => {
     err.innerText = "VETTING CALLSIGN...";
 
     try {
-        // We use PATCH method to trigger the moderation logic in api/config.js
         const response = await fetch('/api/config', {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username: val })
         });
+        
+        if (!response.ok) throw new Error("API_REJECTED");
+
         const result = await response.json();
 
         if (result.valid) {
             err.style.color = "#00f2ff";
             err.innerText = "CALLSIGN APPROVED";
-            input.classList.remove('invalid');
             btn.disabled = false;
         } else {
             err.style.color = "#ff4444";
             err.innerText = "CALLSIGN REJECTED: SECURITY PROTOCOL";
-            input.classList.add('invalid');
             btn.disabled = true;
         }
     } catch (e) {
-        console.warn("Moderation offline");
+        // Fail-safe: If API is down, allow login but notify user
+        err.style.color = "#ffcc00";
+        err.innerText = "LOCAL VALIDATION ACTIVE";
+        btn.disabled = false;
     }
 };
 
@@ -94,7 +101,6 @@ window.saveAdminConfig = async () => {
     const password = prompt("ENTER SYSTEM OVERRIDE KEY:");
     if (!password) return;
 
-    // Build the proposed config
     const proposedConfig = {
         baseSpeed: parseFloat(document.getElementById('cfg-speed').value),
         visionDecay: parseFloat(document.getElementById('cfg-decay').value),
@@ -110,22 +116,20 @@ window.saveAdminConfig = async () => {
         });
 
         if (response.ok) {
-            // ONLY APPLY TO THE GAME IF THE SERVER SAYS YES
             CONFIG = proposedConfig; 
             alert("GLOBAL OVERRIDE SUCCESSFUL");
             showCard('main-menu');
         } else {
             const errorData = await response.json();
             alert(`ACCESS DENIED: ${errorData.error}`);
-            // Revert inputs to the actual current CONFIG
-            showAdmin();
+            showAdmin(); // Reset inputs to original
         }
     } catch (err) {
         alert("COMMUNICATIONS FAILURE");
     }
 };
 
-// 5. CORE GAME ENGINE
+// 5. GAME ENGINE
 function initAudio() {
     if (!audioCtx) {
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
