@@ -7,24 +7,122 @@ let CONFIG = {
 let audioCtx, masterGain, bgMusic = document.getElementById('bgMusic');
 let score = 0, combo = 0, running = false, vision = 1.0;
 let ballPos = 0, lastTime = 0, targetS = 0, targetE = 0, targetHit = true, isBoosting = false;
-
-// Pilot Profile
-let pilotName = "GUEST";
-let pilotColor = "#00f2ff"; 
+let pilotName = "GUEST", pilotColor = "#00f2ff";
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const cx = 300, cy = 300, r = 220, PI2 = Math.PI * 2, OFFSET = -Math.PI / 2;
 
-// 2. AUDIO
+// 2. USERNAME MODERATION (Simulating Industry Standard)
+async function moderateUsername(name) {
+    const forbidden = ['admin', 'root', 'system', 'mod', 'server']; 
+    return new Promise((resolve) => {
+        // Simulate a 300ms API call to Vercel
+        setTimeout(() => {
+            const isClean = !forbidden.includes(name.toLowerCase()) && /^[a-zA-Z0-9_]{3,12}$/.test(name);
+            resolve(isClean);
+        }, 300);
+    });
+}
+
+window.validateInput = async () => {
+    const input = document.getElementById('username-input');
+    const btn = document.getElementById('login-btn');
+    const err = document.getElementById('login-error');
+    const val = input.value.trim();
+
+    if (val.length < 3) {
+        btn.disabled = true;
+        err.innerText = "";
+        return;
+    }
+
+    err.style.color = "#aaa";
+    err.innerText = "VERIFYING CALLSIGN...";
+
+    const isSafe = await moderateUsername(val);
+
+    if (!isSafe) {
+        err.style.color = "#ff4444";
+        err.innerText = "CALLSIGN REJECTED BY SECURITY";
+        input.classList.add('invalid');
+        btn.disabled = true;
+    } else {
+        err.style.color = "#00f2ff";
+        err.innerText = "CALLSIGN VETTED";
+        input.classList.remove('invalid');
+        btn.disabled = false;
+    }
+};
+
+// 3. UI & NAVIGATION
+function showCard(id) {
+    document.querySelectorAll('.ui-card').forEach(c => c.style.display = 'none');
+    const ui = document.getElementById('ui-layer');
+    ui.style.display = 'block'; 
+    const target = document.getElementById(id);
+    if (target) target.style.display = 'flex';
+    if (id === 'none') ui.style.display = 'none';
+}
+
+window.confirmPilot = () => {
+    initAudio();
+    playSFX('ui_click');
+    pilotName = document.getElementById('username-input').value.toUpperCase();
+    
+    // Transition to Menu
+    showCard('main-menu');
+    checkPromo(); // Check for ?promo=boost500
+};
+
+// 4. PROMOTIONAL & ADMIN LOGIC
+function checkPromo() {
+    const params = new URLSearchParams(window.location.search);
+    const promoArea = document.getElementById('promo-area');
+    
+    if (params.get('promo') === 'boost500' && promoArea.innerHTML === "") {
+        const promoBtn = document.createElement('button');
+        promoBtn.innerHTML = "PROMO: BOOST DEPLOY (+500)";
+        promoBtn.style.cssText = "border-color: #ffcc00; color: #ffcc00; margin-top: 15px;";
+        promoBtn.onclick = handleBoost;
+        promoArea.appendChild(promoBtn);
+        
+        const status = document.getElementById('promo-status');
+        status.innerText = "PROMOTIONAL LINK VERIFIED";
+        status.style.color = "#ffcc00";
+    }
+}
+
+// Admin Dashboard Toggle (The 'A' Key)
+window.addEventListener('keydown', (e) => {
+    const menuVisible = document.getElementById('main-menu').style.display === 'flex';
+    if (e.key.toLowerCase() === 'a' && menuVisible) {
+        document.getElementById('cfg-speed').value = CONFIG.baseSpeed;
+        document.getElementById('cfg-decay').value = CONFIG.visionDecay;
+        document.getElementById('cfg-arcMin').value = CONFIG.arcMin;
+        document.getElementById('cfg-arcMax').value = CONFIG.arcMax;
+        showCard('admin-dashboard');
+    }
+});
+
+window.saveAdminConfig = () => {
+    CONFIG.baseSpeed = parseFloat(document.getElementById('cfg-speed').value);
+    CONFIG.visionDecay = parseFloat(document.getElementById('cfg-decay').value);
+    CONFIG.arcMin = parseFloat(document.getElementById('cfg-arcMin').value);
+    CONFIG.arcMax = parseFloat(document.getElementById('cfg-arcMax').value);
+    playSFX('ui_click');
+    showCard('main-menu');
+};
+
+// 5. GAME ENGINE & AUDIO
 function initAudio() {
     if (!audioCtx) {
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         masterGain = audioCtx.createGain();
         masterGain.gain.value = 0.4;
         masterGain.connect(audioCtx.destination);
-        if (bgMusic) bgMusic.volume = 0.1; 
     }
+    if (audioCtx.state === 'suspended') audioCtx.resume();
 }
 
 function playSFX(type) {
@@ -42,49 +140,22 @@ function playSFX(type) {
         osc.type = 'sawtooth'; osc.frequency.setValueAtTime(150, now);
         g.gain.setValueAtTime(0.2, now); g.gain.linearRampToValueAtTime(0.01, now + 0.3);
         osc.start(); osc.stop(now + 0.3);
-    } else if (type === 'boost_engine') {
-        osc.type = 'square'; osc.frequency.setValueAtTime(60 + (Math.random() * 20), now);
-        osc.frequency.exponentialRampToValueAtTime(400, now + 0.1);
-        g.gain.setValueAtTime(0.05, now); osc.start(); osc.stop(now + 0.1);
-    }
-}
-
-// 3. UI MGR
-function showCard(id) {
-    document.querySelectorAll('.ui-card').forEach(c => c.style.display = 'none');
-    const ui = document.getElementById('ui-layer');
-    if (id === 'none') { 
-        ui.style.display = 'none'; 
-    } else { 
-        ui.style.display = 'block'; 
-        const t = document.getElementById(id); 
-        if(t) t.style.display = 'flex'; 
+    } else if (type === 'ui_click') {
+        osc.frequency.setValueAtTime(800, now);
+        g.gain.setValueAtTime(0.1, now); g.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+        osc.start(); osc.stop(now + 0.05);
     }
 }
 
 function hexToRgb(hex) {
-    const r = parseInt(hex.slice(1, 3), 16);
-    const g = parseInt(hex.slice(3, 5), 16);
-    const b = parseInt(hex.slice(5, 7), 16);
+    const r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16);
     return `${r}, ${g}, ${b}`;
 }
 
-window.confirmPilot = () => {
-    const input = document.getElementById('username-input').value;
-    if (input.trim() !== "") pilotName = input.toUpperCase();
-    initAudio();
-    showCard('main-menu');
-};
-
-// 4. DRAWING
 function drawBall(pos, opacity = 1, size = 15) {
-    const bx = cx + Math.cos(pos + OFFSET) * r;
-    const by = cy + Math.sin(pos + OFFSET) * r;
+    const bx = cx + Math.cos(pos + OFFSET) * r, by = cy + Math.sin(pos + OFFSET) * r;
     ctx.fillStyle = opacity === 1 ? pilotColor : `rgba(${hexToRgb(pilotColor)}, ${opacity})`;
-    if (opacity > 0.5) {
-        ctx.shadowBlur = 15;
-        ctx.shadowColor = pilotColor;
-    }
+    if (opacity > 0.5) { ctx.shadowBlur = 15; ctx.shadowColor = pilotColor; }
     ctx.beginPath(); ctx.arc(bx, by, size, 0, PI2); ctx.fill();
     ctx.shadowBlur = 0;
 }
@@ -94,82 +165,66 @@ function update(t) {
     const dt = Math.min((t - lastTime) / 16.6, 2); 
     lastTime = t;
     ctx.clearRect(0, 0, 600, 600);
-    
-    // Background Orbit
     ctx.beginPath(); ctx.arc(cx, cy, r, 0, PI2); 
     ctx.strokeStyle = "#1a1a1a"; ctx.lineWidth = 20; ctx.stroke();
     
-    // The Target
     if (!targetHit && !isBoosting) {
         ctx.beginPath(); ctx.strokeStyle = pilotColor; ctx.lineWidth = 25;
-        ctx.lineCap = "round"; ctx.arc(cx, cy, r, targetS + OFFSET, targetE + OFFSET); 
-        ctx.stroke();
+        ctx.lineCap = "round"; ctx.arc(cx, cy, r, targetS + OFFSET, targetE + OFFSET); ctx.stroke();
     }
-
+    
     let currentSpeed = isBoosting ? 0.35 : (CONFIG.baseSpeed + (score * 0.0001));
-    if (isBoosting) {
-        if (Math.random() > 0.8) playSFX('boost_engine');
-        for(let i = 1; i <= 8; i++) drawBall(ballPos - (i * 0.08), 1 / (i * 2.5), 12);
-    }
+    if (isBoosting) { for(let i = 1; i <= 8; i++) drawBall(ballPos - (i * 0.08), 1 / (i * 2.5), 12); }
 
     ballPos = (ballPos + currentSpeed * dt) % PI2;
     drawBall(ballPos, 1, 15);
+    if (!isBoosting) { vision -= CONFIG.visionDecay * dt; if (vision <= 0) endGame(); }
     
-    if (!isBoosting) {
-        vision -= CONFIG.visionDecay * dt;
-        if (vision <= 0) endGame();
-    }
-
     document.getElementById('vision-bar').style.width = (vision * 100) + '%';
     document.getElementById('score').innerText = Math.floor(score);
     document.getElementById('combo-ui').innerText = `STREAK: ${combo}`;
     requestAnimationFrame(update);
 }
 
-// 5. ACTIONS
+// 6. ACTIONS & EVENTS
 function spawnTarget() {
     targetHit = false;
     let sizeMult = CONFIG.sizes[Math.floor(Math.random() * CONFIG.sizes.length)];
     let baseWidth = Math.max(0.12, (0.5 - (score * 0.0003)) * sizeMult);
     let arcDist = CONFIG.arcMin + Math.random() * (CONFIG.arcMax - CONFIG.arcMin);
-    targetS = (ballPos + arcDist) % PI2;
-    targetE = (targetS + baseWidth) % PI2;
+    targetS = (ballPos + arcDist) % PI2; targetE = (targetS + baseWidth) % PI2;
 }
 
 window.handleBoost = () => {
-    initAudio(); showCard('none');
-    isBoosting = true; running = true; lastTime = performance.now();
-    score += 500;
+    showCard('none'); isBoosting = true; running = true; score += 500;
     if(bgMusic) { bgMusic.currentTime = 0; bgMusic.play(); }
     document.getElementById('game-wrapper').classList.add('warping');
-    setTimeout(() => {
-        isBoosting = false;
-        document.getElementById('game-wrapper').classList.remove('warping');
-        spawnTarget();
-    }, 2000);
+    setTimeout(() => { isBoosting = false; document.getElementById('game-wrapper').classList.remove('warping'); spawnTarget(); }, 2000);
     requestAnimationFrame(update);
 };
 
 function endGame() {
     running = false; if(bgMusic) bgMusic.pause();
-    playSFX('fail'); showCard('game-over-card');
+    playSFX('fail');
+    document.getElementById('end-pilot-name').innerText = pilotName;
+    document.getElementById('end-pilot-name').style.color = pilotColor;
     document.getElementById('final-score-display').innerText = Math.floor(score);
+    showCard('game-over-card');
 }
 
-window.registerPilot = () => { initAudio(); showCard('main-menu'); };
 window.startGame = () => { 
-    initAudio(); showCard('none'); 
-    score = 0; combo = 0; vision = 1.0; 
-    running = true; lastTime = performance.now(); spawnTarget(); 
+    initAudio(); playSFX('ui_click'); showCard('none'); 
+    score = 0; combo = 0; vision = 1.0; running = true; 
+    lastTime = performance.now(); spawnTarget(); 
     if(bgMusic) { bgMusic.currentTime = 0; bgMusic.play(); }
     requestAnimationFrame(update); 
 };
 
-// 6. INIT
 window.onload = () => {
     showCard('login-screen');
     document.querySelectorAll('.skin-opt').forEach(opt => {
         opt.addEventListener('click', () => {
+            initAudio(); playSFX('ui_click');
             document.querySelectorAll('.skin-opt').forEach(o => o.classList.remove('active'));
             opt.classList.add('active');
             pilotColor = opt.dataset.color;
